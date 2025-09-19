@@ -1,119 +1,112 @@
-<!DOCTYPE html>
+<!doctype html>
+
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>タイトル通算獲得数（簡易版）</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>歴代タイトル獲得数ランキング（スマホ特化）</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --card: #15171c;
+      --text: #e8ecf1;
+      --muted: #9aa4b2;
+      --accent: #4cc9f0;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", Helvetica, Arial, sans-serif; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 14px; }header { display:flex; align-items:center; gap:10px; margin:4px 0 12px; }
+header .logo { width: 26px; height: 26px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #a0e9ff); }
+header h1 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
+
+.card { background: var(--card); border: 1px solid #1f232b; border-radius: 14px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.25); margin-bottom: 12px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { border-bottom: 1px solid #232733; padding: 8px 6px; text-align: left; }
+th { color: var(--muted); font-weight: 700; font-size: 12px; }
+td.num { font-family: var(--mono); text-align: right; }
+
+  </style>
 </head>
 <body>
-  <h1>タイトル通算獲得数（簡易版）</h1>
-
-  <table id="t-table">
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <h1>歴代タイトル獲得数ランキング</h1>
+    </header><section class="card">
+  <table id="tbl">
     <thead>
       <tr>
-        <th class="sortable" data-key="name">棋士名</th>
-        <th class="sortable" data-key="total">通算</th>
+        <th>順位</th>
+        <th>棋士名</th>
+        <th>通算</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
+</section>
 
-  <p style="margin-top:1em;">
-    <a href="index.html">▶ 棋士情報（PC版）へ戻る</a> ／
-    <a href="mobile.html">▶ 棋士情報（スマホ版）へ</a>
-  </p>
+  </div>  <script>
+    const CSV_URL = 'title.csv';
 
-  <script>
-    let rows = [];
-    let sortKey = 'total';     // 初期は通算で表示
-    let sortOrder = 'desc';    // 初期は多い順
-
-    async function loadCSV() {
-      const res = await fetch('title.csv');
-      const text = await res.text();
-
-      // 行に分割 → カンマで分割（シンプル版。必要ならCSV厳密パーサに差し替え可）
-      const lines = text.trim().split(/\r?\n/);
-      const header = lines.shift().split(',').map(h => h.trim());
-
-      // ヘッダー名のゆらぎ対応
-      const idx = name => header.findIndex(h => h === name);
-      const nameIdx =
-        (idx('棋士名') >= 0 ? idx('棋士名') :
-        (idx('保持者') >= 0 ? idx('保持者') : -1));
-      const totalIdx =
-        (idx('通算') >= 0 ? idx('通算') :
-        (idx('通算獲得数') >= 0 ? idx('通算獲得数') : -1));
-
-      if (nameIdx === -1 || totalIdx === -1) {
-        console.error('CSVヘッダーが想定外です。必要: 「棋士名(または保持者)」「通算(または通算獲得数)」');
-        return;
-      }
-
-      rows = lines.map(line => {
-        const cols = line.split(',');
-        const name = (cols[nameIdx] || '').trim();
-        const total = Number((cols[totalIdx] || '0').trim());
-        return { name, total: Number.isFinite(total) ? total : 0 };
-      });
-    }
-
-    function render(data) {
-      const tbody = document.querySelector('#t-table tbody');
-      tbody.innerHTML = data.map(r => `
-        <tr>
-          <td>${r.name}</td>
-          <td>${r.total}</td>
-        </tr>
-      `).join('');
-    }
-
-    function sortAndRender() {
-      const sorted = [...rows].sort((a, b) => {
-        if (sortKey === 'name') {
-          const cmp = a.name.localeCompare(b.name, 'ja');
-          return sortOrder === 'asc' ? cmp : -cmp;
+    function parseCSV(text) {
+      const rows = [];
+      let cur = '', row = [], inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === '"') {
+          if (inQuotes && text[i+1] === '"') { cur += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (ch === ',' && !inQuotes) {
+          row.push(cur); cur = '';
+        } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+          if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
+          if (ch === '\r' && text[i+1] === '\n') i++;
+          cur = ''; row = [];
         } else {
-          // total
-          const diff = a.total - b.total;
-          return sortOrder === 'asc' ? diff : -diff;
+          cur += ch;
         }
-      });
-      render(sorted);
+      }
+      if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
+      return rows;
     }
 
-    function attachSortHandlers() {
-      document.querySelectorAll('#t-table th.sortable').forEach(th => {
-        th.addEventListener('click', () => {
-          const key = th.dataset.key;
-
-          if (sortKey === key) {
-            sortOrder = (sortOrder === 'asc') ? 'desc' : 'asc';
-          } else {
-            sortKey = key;
-            sortOrder = 'asc';
-          }
-
-          // ヘッダー矢印の付け替え（style.css の .sorted-asc / .sorted-desc を使用）
-          document.querySelectorAll('#t-table th').forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
-          th.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
-
-          sortAndRender();
-        });
-      });
+    function textNum(v){
+      const n = Number(String(v).replace(/[\s,]/g, ''));
+      return Number.isFinite(n) ? n : NaN;
     }
 
-    (async () => {
-      await loadCSV();
-      attachSortHandlers();
+    async function main() {
+      const res = await fetch(CSV_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('CSV を取得できませんでした');
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (!rows.length) throw new Error('CSV が空です');
 
-      // 初期状態：通算の「多い順」に矢印付与
-      const totalTh = document.querySelector('#t-table th[data-key="total"]');
-      totalTh.classList.add('sorted-desc');
+      const headers = rows[0];
+      const idxName = headers.findIndex(h => h.includes('棋士名'));
+      const idxTotal = headers.findIndex(h => h.includes('通算'));
+      if (idxName < 0 || idxTotal < 0) throw new Error('必要な列が見つかりません');
 
-      sortAndRender();
-    })();
-  </script>
-</body>
+      const body = rows.slice(1).filter(r => r.length === headers.length);
+      const valid = body.filter(r => Number.isFinite(textNum(r[idxTotal])));
+
+      // 通算降順ソート
+      valid.sort((a, b) => textNum(b[idxTotal]) - textNum(a[idxTotal]));
+
+      const tbody = document.querySelector('#tbl tbody');
+      tbody.innerHTML = valid.map((r, i) => `<tr>
+        <td class="num">${i+1}</td>
+        <td>${r[idxName]}</td>
+        <td class="num">${textNum(r[idxTotal])}</td>
+      </tr>`).join('');
+    }
+
+    main().catch(err => {
+      const msg = document.createElement('div');
+      msg.style.cssText = 'color:#ffb3b3; padding:10px;';
+      msg.textContent = `エラー: ${err.message}`;
+      document.querySelector('.wrap').prepend(msg);
+    });
+  </script></body>
 </html>
