@@ -44,14 +44,11 @@ td.num { font-family: var(--mono); text-align: right; }
     <header>
       <div class="logo" aria-hidden="true"></div>
       <h1>四段昇段時の <span style="color:var(--accent)">平均・中央値</span></h1>
-    </header><div class="radio-group">
-  <label><input type="radio" name="view" value="avg" checked> 平均年齢</label>
-  <label><input type="radio" name="view" value="med"> 中央値</label>
-</div>
+    </header>
 
 <section class="card" id="avg-card" style="display:block;">
   <div class="kpi">
-    <div class="label">平均年齢（365.2425日/年換算）</div>
+    <div class="label">将棋棋士の四段昇段時の平均年齢</div>
     <div class="big" id="avg-ymd">— 歳 — ヶ月 — 日</div>
     <div class="sub">平均日数 <span id="avg-days" class="mono">—</span> 日</div>
   </div>
@@ -59,17 +56,23 @@ td.num { font-family: var(--mono); text-align: right; }
 
 <section class="card" id="med-card" style="display:none;">
   <div class="kpi">
-    <div class="label">中央値（365.2425日/年換算）</div>
+    <div class="label">将棋棋士の四段昇段年齢の中央値</div>
     <div class="big" id="med-ymd">— 歳 — ヶ月 — 日</div>
     <div class="sub">中央値日数 <span id="med-days" class="mono">—</span> 日</div>
   </div>
 </section>
 
+<div class="radio-group">
+  <label><input type="radio" name="view" value="avg" checked> 平均年齢</label>
+  <label><input type="radio" name="view" value="med"> 中央値</label>
+</div>
+    
 <section class="card" id="note-card">
   <div class="muted" style="font-size:12px; line-height:1.4;">
     <h4>補足情報</h4>
     <p>*現行の奨励会三段リーグ開始から2025年4月1日付で四段に昇段した棋士まで、全163名が対象。</p>
     <p>*2025年10月1日付で四段へと昇段する棋士4名の情報は、当日以降に追加します。</p>
+    <p>平均年齢・中央値ともに、1年=365.2425日、1ヶ月=30.436875日として換算しています。</p>
   </div>
 </section>
 
