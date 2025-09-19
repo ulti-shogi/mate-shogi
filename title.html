@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>タイトル通算獲得数（簡易版）</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>タイトル通算獲得数（簡易版）</h1>
+
+  <table id="t-table">
+    <thead>
+      <tr>
+        <th class="sortable" data-key="name">棋士名</th>
+        <th class="sortable" data-key="total">通算</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <p style="margin-top:1em;">
+    <a href="index.html">▶ 棋士情報（PC版）へ戻る</a> ／
+    <a href="mobile.html">▶ 棋士情報（スマホ版）へ</a>
+  </p>
+
+  <script>
+    let rows = [];
+    let sortKey = 'total';     // 初期は通算で表示
+    let sortOrder = 'desc';    // 初期は多い順
+
+    async function loadCSV() {
+      const res = await fetch('title.csv');
+      const text = await res.text();
+
+      // 行に分割 → カンマで分割（シンプル版。必要ならCSV厳密パーサに差し替え可）
+      const lines = text.trim().split(/\r?\n/);
+      const header = lines.shift().split(',').map(h => h.trim());
+
+      // ヘッダー名のゆらぎ対応
+      const idx = name => header.findIndex(h => h === name);
+      const nameIdx =
+        (idx('棋士名') >= 0 ? idx('棋士名') :
+        (idx('保持者') >= 0 ? idx('保持者') : -1));
+      const totalIdx =
+        (idx('通算') >= 0 ? idx('通算') :
+        (idx('通算獲得数') >= 0 ? idx('通算獲得数') : -1));
+
+      if (nameIdx === -1 || totalIdx === -1) {
+        console.error('CSVヘッダーが想定外です。必要: 「棋士名(または保持者)」「通算(または通算獲得数)」');
+        return;
+      }
+
+      rows = lines.map(line => {
+        const cols = line.split(',');
+        const name = (cols[nameIdx] || '').trim();
+        const total = Number((cols[totalIdx] || '0').trim());
+        return { name, total: Number.isFinite(total) ? total : 0 };
+      });
+    }
+
+    function render(data) {
+      const tbody = document.querySelector('#t-table tbody');
+      tbody.innerHTML = data.map(r => `
+        <tr>
+          <td>${r.name}</td>
+          <td>${r.total}</td>
+        </tr>
+      `).join('');
+    }
+
+    function sortAndRender() {
+      const sorted = [...rows].sort((a, b) => {
+        if (sortKey === 'name') {
+          const cmp = a.name.localeCompare(b.name, 'ja');
+          return sortOrder === 'asc' ? cmp : -cmp;
+        } else {
+          // total
+          const diff = a.total - b.total;
+          return sortOrder === 'asc' ? diff : -diff;
+        }
+      });
+      render(sorted);
+    }
+
+    function attachSortHandlers() {
+      document.querySelectorAll('#t-table th.sortable').forEach(th => {
+        th.addEventListener('click', () => {
+          const key = th.dataset.key;
+
+          if (sortKey === key) {
+            sortOrder = (sortOrder === 'asc') ? 'desc' : 'asc';
+          } else {
+            sortKey = key;
+            sortOrder = 'asc';
+          }
+
+          // ヘッダー矢印の付け替え（style.css の .sorted-asc / .sorted-desc を使用）
+          document.querySelectorAll('#t-table th').forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+          th.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+          sortAndRender();
+        });
+      });
+    }
+
+    (async () => {
+      await loadCSV();
+      attachSortHandlers();
+
+      // 初期状態：通算の「多い順」に矢印付与
+      const totalTh = document.querySelector('#t-table th[data-key="total"]');
+      totalTh.classList.add('sorted-desc');
+
+      sortAndRender();
+    })();
+  </script>
+</body>
+</html>
