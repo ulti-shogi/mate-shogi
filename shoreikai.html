@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>四段昇段時の平均・中央値（スマホ特化）</title>
   <style>
-    /* スマホ特化（PCは一切考慮しない） */
     :root {
       --bg: #0b0c10;
       --card: #15171c;
@@ -20,17 +19,18 @@
 header .logo { width: 26px; height: 26px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #a0e9ff); }
 header h1 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
 
-.card { background: var(--card); border: 1px solid #1f232b; border-radius: 14px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+.card { background: var(--card); border: 1px solid #1f232b; border-radius: 14px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.25); margin-bottom: 12px; }
 
 .kpi { text-align: center; }
 .kpi .label { color: var(--muted); font-size: 12px; }
 .kpi .big { font-size: 28px; font-weight: 800; letter-spacing: .02em; margin: 4px 0; }
 .kpi .sub { color: var(--muted); font-size: 12px; }
 
+.radio-group { display:flex; justify-content:center; gap:16px; margin-bottom:8px; }
+label { font-size: 14px; }
+
 .muted { color: var(--muted); }
 .mono { font-family: var(--mono); }
-
-.spacer { height: 12px; }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { border-bottom: 1px solid #232733; padding: 8px 6px; text-align: left; }
@@ -43,37 +43,43 @@ td.num { font-family: var(--mono); text-align: right; }
   <div class="wrap">
     <header>
       <div class="logo" aria-hidden="true"></div>
-      <h1>四段昇段時の <span style="color:var(--accent)">平均・中央値</span></h1>
-    </header><!-- KPI: 平均年齢 -->
-<section class="card" id="avg-card">
+      <h1><a href="https://ulti-shogi.github.io/mate-shogi/index.html">将棋の殿堂</a></h1>
+    </header>
+
+<section class="card" id="avg-card" style="display:block;">
   <div class="kpi">
-    <div class="label">平均年齢（グレゴリオ平均方式）</div>
+    <div class="label">将棋棋士の四段昇段時の平均年齢</div>
     <div class="big" id="avg-ymd">— 歳 — ヶ月 — 日</div>
     <div class="sub">平均日数 <span id="avg-days" class="mono">—</span> 日</div>
   </div>
 </section>
 
-<div class="spacer"></div>
-
-<!-- KPI: 中央値年齢 -->
-<section class="card" id="med-card">
+<section class="card" id="med-card" style="display:none;">
   <div class="kpi">
-    <div class="label">中央値（グレゴリオ平均方式）</div>
+    <div class="label">将棋棋士の四段昇段年齢の中央値</div>
     <div class="big" id="med-ymd">— 歳 — ヶ月 — 日</div>
     <div class="sub">中央値日数 <span id="med-days" class="mono">—</span> 日</div>
   </div>
 </section>
 
-<div class="spacer"></div>
+<div class="radio-group">
+  <label><input type="radio" name="view" value="avg" checked> 平均年齢</label>
+  <label><input type="radio" name="view" value="med"> 中央値</label>
+</div>
+    
+<section class="card" id="note-card">
+  <div class="muted" style="font-size:12px; line-height:1.4;">
+    <h4>補足情報</h4>
+    <p>*現行の奨励会三段リーグ開始から2025年4月1日付で四段に昇段した棋士まで、全163名が対象。</p>
+    <p>*2025年10月1日付で四段へと昇段する棋士4名の情報は、当日以降に追加します。</p>
+    <p>平均年齢・中央値ともに、1年=365.2425日、1ヶ月=30.436875日として換算しています。</p>
+  </div>
+</section>
 
-<!-- 件数表示（テーブルの直前） -->
 <section class="card" id="meta-card">
   <div class="muted" style="font-size:12px;">件数：<span id="n" class="mono">—</span> 件</div>
 </section>
 
-<div class="spacer"></div>
-
-<!-- 一覧テーブル：棋士番号 / 棋士名 / 昇段時の年齢 -->
 <section class="card">
   <table id="tbl">
     <thead>
@@ -88,10 +94,10 @@ td.num { font-family: var(--mono); text-align: right; }
 </section>
 
   </div>  <script>
-    // スマホ特化版：PCは未対応。CSVは同ディレクトリの average.csv を想定
     const CSV_URL = 'average.csv';
+    const YEAR_DAYS = 365.2425;
+    const MONTH_DAYS = YEAR_DAYS / 12.0;
 
-    // 簡易CSVパーサ（カンマ区切り + ダブルクォート最小対応）
     function parseCSV(text) {
       const rows = [];
       let cur = '', row = [], inQuotes = false;
@@ -114,19 +120,14 @@ td.num { font-family: var(--mono); text-align: right; }
       return rows;
     }
 
-    // グレゴリオ平均方式：365.2425 日/年、30.436875 日/月
-    const YEAR_DAYS = 365.2425;
-    const MONTH_DAYS = YEAR_DAYS / 12.0; // 30.436875
-
     function daysToYMD(days) {
       let y = Math.floor(days / YEAR_DAYS);
       let r = days - y * YEAR_DAYS;
       let m = Math.floor(r / MONTH_DAYS);
       r -= m * MONTH_DAYS;
       let d = Math.round(r);
-      // 丸め補正
-      if (d >= Math.round(MONTH_DAYS)) { m += 1; d = 0; }
-      if (m >= 12) { y += 1; m = 0; }
+      if (d >= Math.round(MONTH_DAYS)) { m++; d = 0; }
+      if (m >= 12) { y++; m = 0; }
       return { y, m, d };
     }
 
@@ -134,8 +135,7 @@ td.num { font-family: var(--mono); text-align: right; }
       if (!arr.length) return NaN;
       const a = [...arr].sort((x, y) => x - y);
       const mid = Math.floor(a.length / 2);
-      if (a.length % 2 === 1) return a[mid];
-      return (a[mid - 1] + a[mid]) / 2;
+      return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2;
     }
 
     function textNum(v){
@@ -148,53 +148,39 @@ td.num { font-family: var(--mono); text-align: right; }
       if (!res.ok) throw new Error('CSV を取得できませんでした');
       const text = await res.text();
       const rows = parseCSV(text);
-      if (!rows.length) throw new Error('CSV が空です');
-
       const headers = rows[0];
       const body = rows.slice(1).filter(r => r.length === headers.length);
 
-      // 必要列のインデックス
-      const idxNo   = headers.findIndex(h => h.includes('棋士番号'));
+      const idxNo = headers.findIndex(h => h.includes('棋士番号'));
       const idxName = headers.findIndex(h => h.includes('棋士名'));
       const idxAgeS = headers.findIndex(h => h.includes('昇段時の年齢'));
       const idxDays = headers.findIndex(h => h.includes('昇段までの日数'));
-      if (idxNo < 0 || idxName < 0 || idxAgeS < 0 || idxDays < 0) {
-        throw new Error('必要な列（棋士番号/棋士名/昇段時の年齢/昇段までの日数）が見つかりません');
-      }
+      const valid = body.filter(r => Number.isFinite(textNum(r[idxDays])));
 
-      // 数値化できる行のみ集計対象にする
-      const valid = body.filter(r => Number.isFinite(textNum(r[idxDays])) && Number.isFinite(textNum(r[idxNo])));
       const n = valid.length;
       document.getElementById('n').textContent = n;
 
       const daysList = valid.map(r => textNum(r[idxDays]));
-      const sum = daysList.reduce((a,b)=>a+b, 0);
-      const avgDays = sum / Math.max(1, n);
+      const avgDays = daysList.reduce((a,b)=>a+b,0) / n;
       const medDays = median(daysList);
 
-      // KPI: 平均
       const A = daysToYMD(avgDays);
       document.getElementById('avg-ymd').textContent = `${A.y}歳${A.m}ヶ月${A.d}日`;
-      document.getElementById('avg-days').textContent = (Math.round(avgDays*10)/10).toFixed(1);
+      document.getElementById('avg-days').textContent = (avgDays).toFixed(1);
 
-      // KPI: 中央
       const M = daysToYMD(medDays);
       document.getElementById('med-ymd').textContent = `${M.y}歳${M.m}ヶ月${M.d}日`;
-      document.getElementById('med-days').textContent = (Math.round(medDays*10)/10).toFixed(1);
+      document.getElementById('med-days').textContent = (medDays).toFixed(1);
 
-      // テーブル描画：棋士番号昇順
       valid.sort((a, b) => textNum(a[idxNo]) - textNum(b[idxNo]));
-      const tbody = document.querySelector('#tbl tbody');
-      tbody.innerHTML = valid.map(r => {
-        const no = r[idxNo];
-        const nm = r[idxName];
-        const ageStr = r[idxAgeS]; // 文字列そのまま表示
-        return `<tr>
-          <td class="num">${no}</td>
-          <td>${nm}</td>
-          <td>${ageStr}</td>
-        </tr>`;
-      }).join('');
+      document.querySelector('#tbl tbody').innerHTML = valid.map(r => `<tr><td class="num">${r[idxNo]}</td><td>${r[idxName]}</td><td>${r[idxAgeS]}</td></tr>`).join('');
+
+      document.querySelectorAll('input[name="view"]').forEach(radio => {
+        radio.addEventListener('change', e => {
+          document.getElementById('avg-card').style.display = e.target.value === 'avg' ? 'block' : 'none';
+          document.getElementById('med-card').style.display = e.target.value === 'med' ? 'block' : 'none';
+        });
+      });
     }
 
     main().catch(err => {
@@ -202,7 +188,6 @@ td.num { font-family: var(--mono); text-align: right; }
       msg.style.cssText = 'color:#ffb3b3; padding:10px;';
       msg.textContent = `エラー: ${err.message}`;
       document.querySelector('.wrap').prepend(msg);
-      console.error(err);
     });
   </script></body>
 </html>
