@@ -106,7 +106,7 @@ td.num { font-family: var(--mono); text-align: right; }
         document.querySelector('#tbl tbody').innerHTML = filtered.map(r => `
           <tr>
             <td class="num">${r[idxRank]}</td>
-            <td>${r[idxName]}</td>
+            <td><a href="prize-searcher.html?q=${encodeURIComponent(r[idxName])}">${r[idxName]}</a></td>
             <td>${r[idxTitle]}</td>
             <td class="num">${r[idxMoney]}</td>
           </tr>`).join('');

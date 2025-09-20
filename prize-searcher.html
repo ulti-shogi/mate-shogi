@@ -61,101 +61,114 @@ td.num { font-family: var(--mono); text-align: right; }
   <div class="muted" id="noresult" style="display:none; text-align:center; padding:6px;">該当なし</div>
 </section>
 
-  </div>  <script>
-    const CSV_URL = 'prize-ranking.csv';
+  </div>  
+    
+    <script>
+  const CSV_URL = 'prize-ranking.csv';
 
-    function parseCSV(text) {
-      const rows = [];
-      let cur = '', row = [], inQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-        const ch = text[i];
-        if (ch === '"') {
-          if (inQuotes && text[i+1] === '"') { cur += '"'; i++; }
-          else { inQuotes = !inQuotes; }
-        } else if (ch === ',' && !inQuotes) {
-          row.push(cur); cur = '';
-        } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
-          if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
-          if (ch === '\r' && text[i+1] === '\n') i++;
-          cur = ''; row = [];
-        } else {
-          cur += ch;
-        }
+  function parseCSV(text) {
+    const rows = [];
+    let cur = '', row = [], inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '"') {
+        if (inQuotes && text[i+1] === '"') { cur += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+      } else if (ch === ',' && !inQuotes) {
+        row.push(cur); cur = '';
+      } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+        if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
+        if (ch === '\r' && text[i+1] === '\n') i++;
+        cur = ''; row = [];
+      } else {
+        cur += ch;
       }
-      if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
-      return rows;
     }
+    if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
+    return rows;
+  }
 
-    async function main() {
-      const res = await fetch(CSV_URL, { cache: 'no-store' });
-      if (!res.ok) throw new Error('CSV を取得できませんでした');
-      const text = await res.text();
-      const rows = parseCSV(text);
-      if (!rows.length) throw new Error('CSV が空です');
+  async function main() {
+    const res = await fetch(CSV_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('CSV を取得できませんでした');
+    const text = await res.text();
+    const rows = parseCSV(text);
+    if (!rows.length) throw new Error('CSV が空です');
 
-      const headers = rows[0];
-      const idxYear = headers.findIndex(h => h.includes('年'));
-      const idxRank = headers.findIndex(h => h.includes('順位'));
-      const idxName = headers.findIndex(h => h.includes('棋士名'));
-      const idxMoney = headers.findIndex(h => h.includes('賞金・対局料'));
+    const headers = rows[0];
+    const idxYear = headers.findIndex(h => h.includes('年'));
+    const idxRank = headers.findIndex(h => h.includes('順位'));
+    const idxName = headers.findIndex(h => h.includes('棋士名'));
+    const idxMoney = headers.findIndex(h => h.includes('賞金・対局料'));
 
-      const body = rows.slice(1).filter(r => r.length === headers.length);
+    const body = rows.slice(1).filter(r => r.length === headers.length);
 
-      function search(name) {
-        const q = name.trim();
-        if (!q) return [];
-        const tokens = q.replace(/　/g, ' ').split(/\s+/);
-        return body.filter(r => {
-          const target = r[idxName];
-          return tokens.every(t => target.includes(t));
-        });
-      }
-
-      function renderResult(list, query) {
-        const tbody = document.querySelector('#tbl tbody');
-        const meta = document.getElementById('meta-card');
-        const metaInfo = document.getElementById('meta-info');
-        const noresult = document.getElementById('noresult');
-
-        if (!list.length) {
-          tbody.innerHTML = '';
-          meta.style.display = 'none';
-          noresult.style.display = 'block';
-          return;
-        }
-
-        list.sort((a,b)=>Number(b[idxYear]) - Number(a[idxYear]));
-        tbody.innerHTML = list.map(r => `
-          <tr>
-            <td class="num">${r[idxYear]}</td>
-            <td class="num">${r[idxRank]}</td>
-            <td class="num">${r[idxMoney]}</td>
-          </tr>`).join('');
-
-        const years = list.map(r=>Number(r[idxYear]));
-        metaInfo.textContent = `${query}：${Math.min(...years)}〜${Math.max(...years)}年、${list.length}件`;
-        meta.style.display = 'block';
-        noresult.style.display = 'none';
-      }
-
-      document.getElementById('searchBtn').addEventListener('click', ()=>{
-        const q = document.getElementById('searchInput').value;
-        renderResult(search(q), q);
-      });
-
-      document.getElementById('searchInput').addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          const q = e.target.value;
-          renderResult(search(q), q);
-        }
+    function search(name) {
+      const q = name.trim();
+      if (!q) return [];
+      const tokens = q.replace(/　/g, ' ').split(/\s+/);
+      return body.filter(r => {
+        const target = r[idxName];
+        return tokens.every(t => target.includes(t));
       });
     }
 
-    main().catch(err => {
-      const msg = document.createElement('div');
-      msg.style.cssText = 'color:#ffb3b3; padding:10px;';
-      msg.textContent = `エラー: ${err.message}`;
-      document.querySelector('.wrap').prepend(msg);
+    function renderResult(list, query) {
+      const tbody = document.querySelector('#tbl tbody');
+      const meta = document.getElementById('meta-card');
+      const metaInfo = document.getElementById('meta-info');
+      const noresult = document.getElementById('noresult');
+
+      if (!list.length) {
+        tbody.innerHTML = '';
+        meta.style.display = 'none';
+        noresult.style.display = 'block';
+        return;
+      }
+
+      list.sort((a,b)=>Number(b[idxYear]) - Number(a[idxYear]));
+      tbody.innerHTML = list.map(r => `
+        <tr>
+          <td class="num">${r[idxYear]}</td>
+          <td class="num">${r[idxRank]}</td>
+          <td class="num">${r[idxMoney]}</td>
+        </tr>`).join('');
+
+      const years = list.map(r=>Number(r[idxYear]));
+      metaInfo.textContent = `${query}：${Math.min(...years)}〜${Math.max(...years)}年、${list.length}件`;
+      meta.style.display = 'block';
+      noresult.style.display = 'none';
+    }
+
+    // 検索ボタン
+    document.getElementById('searchBtn').addEventListener('click', ()=>{
+      const q = document.getElementById('searchInput').value;
+      renderResult(search(q), q);
     });
-  </script></body>
+
+    // Enterキー対応
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const q = e.target.value;
+        renderResult(search(q), q);
+      }
+    });
+
+    // URLクエリから初期検索
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) {
+      document.getElementById('searchInput').value = q;
+      renderResult(search(q), q);
+    }
+  }
+
+  main().catch(err => {
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:#ffb3b3; padding:10px;';
+    msg.textContent = `エラー: ${err.message}`;
+    document.querySelector('.wrap').prepend(msg);
+  });
+  </script>
+</body>
 </html>
