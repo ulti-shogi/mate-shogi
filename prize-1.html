@@ -1,0 +1,170 @@
+<!doctype html>
+
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>賞金ランキング（スマホ特化）</title>
+  <style>
+  :root {
+    --bg: #0b0c10;
+    --card: #15171c;
+    --text: #e8ecf1;
+    --muted: #9aa4b2;
+    --accent: #4cc9f0;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    /* background と color を削除 */
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", Helvetica, Arial, sans-serif;
+  }
+
+  .wrap { max-width: 480px; margin: 0 auto; padding: 14px; }
+  header { display:flex; align-items:center; gap:10px; margin:4px 0 12px; }
+  header .logo { width: 26px; height: 26px; border-radius: 6px; /* background を削除 */ }
+  header h1 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
+
+  .card {
+    /* background を削除 */
+    border: 1px solid #1f232b;
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    margin-bottom: 12px;
+  }
+
+  select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #2a2e39;
+    /* background と color を削除 */
+    font-size: 14px;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border-bottom: 1px solid #232733; padding: 8px 6px; text-align: left; }
+  th { /* color を削除 */ font-weight: 700; font-size: 12px; }
+  td.num { font-family: var(--mono); text-align: right; }
+
+  /* 黒背景カードの上書き（色指定削除） */
+  .card, .info-box {
+    /* background-color を削除 */
+    border: 1px solid #d6c89f;
+    border-radius: 8px;
+  }
+
+  table {
+    /* background-color を削除 */
+    border-collapse: collapse;
+  }
+  th, td {
+    /* color を削除 */
+    border: 1px solid #d6c89f;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <h1>賞金ランキング</h1>
+    </header><section class="card">
+  <label for="yearSelect" style="display:block; font-size:14px; margin-bottom:4px;">年を選択</label>
+  <select id="yearSelect"></select>
+</section>
+
+<section class="card info-box">
+  <p style="font-size:14px; margin:0;">
+    棋士名をクリックすると、その棋士の過去の賞金額一覧ページ（prize-searcher.html）を表示します。
+  </p>
+</section>
+      
+<section class="card">
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th>順位</th>
+        <th>棋士名</th>
+        <th>段位・称号</th>
+        <th>賞金・対局料</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+  </div>  <script>
+    const CSV_URL = 'prize-ranking.csv';
+
+    function parseCSV(text) {
+      const rows = [];
+      let cur = '', row = [], inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === '"') {
+          if (inQuotes && text[i+1] === '"') { cur += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (ch === ',' && !inQuotes) {
+          row.push(cur); cur = '';
+        } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+          if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
+          if (ch === '\r' && text[i+1] === '\n') i++;
+          cur = ''; row = [];
+        } else {
+          cur += ch;
+        }
+      }
+      if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
+      return rows;
+    }
+
+    async function main() {
+      const res = await fetch(CSV_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('CSV を取得できませんでした');
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (!rows.length) throw new Error('CSV が空です');
+
+      const headers = rows[0];
+      const idxYear = headers.findIndex(h => h.includes('年'));
+      const idxRank = headers.findIndex(h => h.includes('順位'));
+      const idxName = headers.findIndex(h => h.includes('棋士名'));
+      const idxTitle = headers.findIndex(h => h.includes('段位'));
+      const idxMoney = headers.findIndex(h => h.includes('賞金・対局料'));
+
+      const body = rows.slice(1).filter(r => r.length === headers.length);
+
+      // 年の一覧を抽出
+      const years = [...new Set(body.map(r => r[idxYear]))].sort((a,b)=>b - a);
+      const select = document.getElementById('yearSelect');
+      select.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+      function render(year){
+        const filtered = body.filter(r => r[idxYear] == year);
+        filtered.sort((a, b) => Number(a[idxRank]) - Number(b[idxRank]));
+        document.querySelector('#tbl tbody').innerHTML = filtered.map(r => `
+          <tr>
+            <td class="num">${r[idxRank]}</td>
+            <td><a href="prize-searcher.html?q=${encodeURIComponent(r[idxName])}">${r[idxName]}</a></td>
+            <td>${r[idxTitle]}</td>
+            <td class="num">${r[idxMoney]}</td>
+          </tr>`).join('');
+      }
+
+      render(years[0]); // 初期表示：最新年
+
+      select.addEventListener('change', e => render(e.target.value));
+    }
+
+    main().catch(err => {
+      const msg = document.createElement('div');
+      msg.style.cssText = 'color:#ffb3b3; padding:10px;';
+      msg.textContent = `エラー: ${err.message}`;
+      document.querySelector('.wrap').prepend(msg);
+    });
+  </script></body>
+</html>
