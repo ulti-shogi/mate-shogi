@@ -7,10 +7,10 @@
   <title>四段昇段時の平均・中央値（スマホ特化）</title>
 <style>
   :root {
-    /* ↓ ここだけ変更 */
-    --bg: #f4e2b8;   /* 駒色っぽい明るいベージュ */
+    /* 変数は残しています（使われないので表示には影響しません） */
+    --bg: #f4e2b8;
     --card: #15171c;
-    --text: #1a1a1a; /* 黒に近い文字色 */
+    --text: #1a1a1a;
     --muted: #9aa4b2;
     --accent: #4cc9f0;
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -19,50 +19,48 @@
   html, body {
     margin: 0;
     padding: 0;
-    background: var(--bg);
-    color: var(--text);
+    /* background と color を削除 */
     font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", Helvetica, Arial, sans-serif;
   }
 
   .wrap { max-width: 480px; margin: 0 auto; padding: 14px; }
   header { display:flex; align-items:center; gap:10px; margin:4px 0 12px; }
-  header .logo { width: 26px; height: 26px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #a0e9ff); }
+  header .logo { width: 26px; height: 26px; border-radius: 6px; /* background を削除 */ }
   header h1 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
 
-  .card { background: var(--card); border: 1px solid #1f232b; border-radius: 14px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.25); margin-bottom: 12px; }
+  .card { /* background を削除 */ border: 1px solid #1f232b; border-radius: 14px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.25); margin-bottom: 12px; }
 
   .kpi { text-align: center; }
-  .kpi .label { color: var(--muted); font-size: 12px; }
+  .kpi .label { /* color を削除 */ font-size: 12px; }
   .kpi .big { font-size: 28px; font-weight: 800; letter-spacing: .02em; margin: 4px 0; }
-  .kpi .sub { color: var(--muted); font-size: 12px; }
+  .kpi .sub { /* color を削除 */ font-size: 12px; }
 
   .radio-group { display:flex; justify-content:center; gap:16px; margin-bottom:8px; }
   label { font-size: 14px; }
 
-  .muted { color: var(--muted); }
+  .muted { /* color を削除 */ }
   .mono { font-family: var(--mono); }
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { border-bottom: 1px solid #232733; padding: 8px 6px; text-align: left; }
-  th { color: var(--muted); font-weight: 700; font-size: 12px; }
+  th { /* color を削除 */ font-weight: 700; font-size: 12px; }
   td.num { font-family: var(--mono); text-align: right; }
 
-    /* 黒背景カードの上書き */
-.card, .info-box {
-  background-color: #fdf6e3;
-  border: 1px solid #d6c89f;
-  border-radius: 8px;
-}
+  /* ここから下の“明るい背景へ上書き”ブロックも、色指定のみ削除 */
+  .card, .info-box {
+    /* background-color を削除 */
+    border: 1px solid #d6c89f;
+    border-radius: 8px;
+  }
 
-/* テーブルも明るい背景に */
-table {
-  background-color: #fdf6e3;
-  border-collapse: collapse;
-}
-th, td {
-  color: #1a1a1a;
-  border: 1px solid #d6c89f;
-}
+  table {
+    /* background-color を削除 */
+    border-collapse: collapse;
+  }
+  th, td {
+    /* color を削除 */
+    border: 1px solid #d6c89f;
+  }
 </style>
 </head>
 <body>
