@@ -79,7 +79,7 @@
 
 <section class="card info-box">
   <p style="font-size:14px; margin:0;">
-    棋士名をクリックすると、その棋士の過去の賞金額一覧ページ（prize-searcher.html）を表示します。
+    棋士名をクリックすると別のページに飛び、その棋士の過去の対局料・賞金額を各年ごとに表示します。
   </p>
 </section>
       
@@ -149,7 +149,7 @@
         document.querySelector('#tbl tbody').innerHTML = filtered.map(r => `
           <tr>
             <td class="num">${r[idxRank]}</td>
-            <td><a href="prize-searcher.html?q=${encodeURIComponent(r[idxName])}">${r[idxName]}</a></td>
+            <td><a href="prize-2.html?q=${encodeURIComponent(r[idxName])}">${r[idxName]}</a></td>
             <td>${r[idxTitle]}</td>
             <td class="num">${r[idxMoney]}</td>
           </tr>`).join('');
