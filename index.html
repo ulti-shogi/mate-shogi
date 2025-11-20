@@ -3,39 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <title>タイプ相性カウントツール</title>
-  <link rel="stylesheet" href="style.css?v=20251120-a">
+  <!-- ★ スマホ向け：これを追加 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css?v=20251120-b">
 </head>
 <body>
-  <h1>究極版タイプ相性カウントツール</h1>
+  <!-- ★ 中央寄せ用のラッパー -->
+  <div class="wrapper">
+    <h1>究極版タイプ相性カウントツール</h1>
 
-  <form id="type-form">
-    <label for="attackType">
-      攻撃側のタイプを選んでください：
-      <select id="attackType" name="attackType">
-        <option value="">-- 選択してください --</option>
-        <!-- typechart.js 読み込み後に自動で埋めます -->
-      </select>
-    </label>
-    <button type="submit">計算する</button>
-  </form>
+    <form id="type-form">
+      <label for="attackType">
+        攻撃側のタイプを選んでください：
+        <select id="attackType" name="attackType">
+          <option value="">-- 選択してください --</option>
+          <!-- typechart.js 読み込み後に自動で埋めます -->
+        </select>
+      </label>
+      <button type="submit">計算する</button>
+    </form>
 
-  <section id="result" style="display: none;">
-    <h2>結果</h2>
-    <p id="summaryText"></p>
-    <table>
-      <thead>
-        <tr>
-          <th>倍率</th>
-          <th>組み合わせ数</th>
-        </tr>
-      </thead>
-      <tbody id="resultBody">
-        <!-- JSで埋めます -->
-      </tbody>
-    </table>
-  </section>
+    <section id="result" style="display: none;">
+      <h2>結果</h2>
+      <p id="summaryText"></p>
+      <table>
+        <thead>
+          <tr>
+            <th>倍率</th>
+            <th>組み合わせ数</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody">
+          <!-- JSで埋めます -->
+        </tbody>
+      </table>
+    </section>
+  </div>
 
-<!-- 先に typechart.js を読み込む（データ＆ロジック） -->
+  <!-- 先に typechart.js を読み込む（データ＆ロジック） -->
   <script src="typechart.js"></script>
   <!-- UIまわりの処理はこちらに -->
   <script src="app.js?v=20251120-1"></script>
