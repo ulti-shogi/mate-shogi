@@ -1,4 +1,27 @@
 // app.js
+
+// 日本語表示用マップ
+const typeNameJa = {
+  Normal: "ノーマル",
+  Fire: "ほのお",
+  Water: "みず",
+  Electric: "でんき",
+  Grass: "くさ",
+  Ice: "こおり",
+  Fighting: "かくとう",
+  Poison: "どく",
+  Ground: "じめん",
+  Flying: "ひこう",
+  Psychic: "エスパー",
+  Bug: "むし",
+  Rock: "いわ",
+  Ghost: "ゴースト",
+  Dragon: "ドラゴン",
+  Dark: "あく",
+  Steel: "はがね",
+  Fairy: "フェアリー"
+};
+
 document.addEventListener('DOMContentLoaded', function () {
   const attackSelects = [
     document.getElementById('attackType1'),
@@ -19,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
         attackTypes.forEach(function (type) {
           const option = document.createElement('option');
           option.value = type;
-          option.textContent = type;
+          option.textContent = typeNameJa[type];
           select.appendChild(option);
         });
       });

@@ -81,3 +81,16 @@ td:first-child,
 th:first-child {
   text-align: left;
 }
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;  /* スマホ向けの程よい余白 */
+  margin-bottom: 12px;
+}
+
+.row label {
+  flex: 1;             /* 均等に伸びる */
+  display: flex;
+  flex-direction: column; /* 「技1」「select」を縦に */
+}
