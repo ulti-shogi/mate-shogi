@@ -105,14 +105,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const total = Object.values(counts).reduce((sum, v) => sum + v, 0);
     console.log('total combinations =', total); // 171 になる想定
 
-    // 等倍以上／半減以下の合計を計算
-    const totalSuper = counts['4'] + counts['2'] + counts['1'];                // 等倍以上
-    const totalResist = counts['0.5'] + counts['0.25'] + counts['0'];         // 半減以下
+    // 等倍以上／半減以下などを計算
+    const totalSuper = counts['4'] + counts['2'] + counts['1'];       // 等倍以上
+    const totalSuperEffective = counts['4'] + counts['2'];            // 抜群（2倍以上）
+    const totalResist = counts['0.5'] + counts['0.25'] + counts['0']; // 半減以下
 
     // 表の中身を更新
     resultBody.innerHTML = '';
 
-    // 通常の6行（倍率ごとのカウント）
     multiplierKeys.forEach(function (key) {
       const tr = document.createElement('tr');
 
@@ -122,46 +122,30 @@ document.addEventListener('DOMContentLoaded', function () {
       const tdCount = document.createElement('td');
       tdCount.textContent = counts[key] + ' 種類';
 
-      const tdTotal = document.createElement('td');
-      tdTotal.textContent = ''; // 個別行では空欄
+      const tdRange = document.createElement('td');
+
+      // ★ 3列目に縦にまとめる
+      let rangeText = '';
+      if (key === '4') {
+        rangeText = '等倍以上';
+      } else if (key === '2') {
+        rangeText = totalSuper + 'タイプ';
+      } else if (key === '1') {
+        rangeText = '（うち抜群' + totalSuperEffective + '）';
+      } else if (key === '0.5') {
+        rangeText = '半減以下';
+      } else if (key === '0.25') {
+        rangeText = totalResist + 'タイプ';
+      } else if (key === '0') {
+        rangeText = '合計' + total + 'タイプ';
+      }
+      tdRange.textContent = rangeText;
 
       tr.appendChild(tdMul);
       tr.appendChild(tdCount);
-      tr.appendChild(tdTotal);
+      tr.appendChild(tdRange);
       resultBody.appendChild(tr);
     });
-
-    // まとめ行：等倍以上（4・2・1）
-    const trSuper = document.createElement('tr');
-    const tdSuperLabel = document.createElement('td');
-    tdSuperLabel.textContent = '等倍以上（4・2・1）';
-
-    const tdSuperCount = document.createElement('td');
-    tdSuperCount.textContent = ''; // ここは空欄でもよい
-
-    const tdSuperTotal = document.createElement('td');
-    tdSuperTotal.textContent = totalSuper + ' 種類';
-
-    trSuper.appendChild(tdSuperLabel);
-    trSuper.appendChild(tdSuperCount);
-    trSuper.appendChild(tdSuperTotal);
-    resultBody.appendChild(trSuper);
-
-    // まとめ行：半減以下（0.5・0.25・0）
-    const trResist = document.createElement('tr');
-    const tdResistLabel = document.createElement('td');
-    tdResistLabel.textContent = '半減以下（0.5・0.25・0）';
-
-    const tdResistCount = document.createElement('td');
-    tdResistCount.textContent = '';
-
-    const tdResistTotal = document.createElement('td');
-    tdResistTotal.textContent = totalResist + ' 種類';
-
-    trResist.appendChild(tdResistLabel);
-    trResist.appendChild(tdResistCount);
-    trResist.appendChild(tdResistTotal);
-    resultBody.appendChild(trResist);
 
     // 選択タイプ一覧（英語）をそのまま表示
     const typeListText = chosenTypes.join(', ');
