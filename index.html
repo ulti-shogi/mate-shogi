@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <title>究極版タイプ相性カウントツール</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css?v=2025-11-22-2">
+  <link rel="stylesheet" href="style.css?v=2025-11-23-1">
 </head>
 <body>
   <div class="wrapper">
     <h1>究極版タイプ相性カウントツール</h1>
 
     <form id="type-form">
-  <p>攻撃側のタイプを最大4つまで選んでください（未選択も可）。</p>
+  <p>攻撃側のタイプを最大4つまで選んでください。</p>
 
   <div class="row">
     <label>
@@ -49,26 +49,29 @@
 </form>
 
     <section id="result" style="display: none;">
-      <h2>結果</h2>
-      <p id="summaryText"></p>
-      <table>
-  <thead>
-    <tr>
-      <th>倍率</th>
-      <th>組み合わせ数</th>
-      <th>範囲</th>   <!-- ★ ここを追加 -->
-    </tr>
-  </thead>
-  <tbody id="resultBody">
-    <!-- JSで埋めます -->
-  </tbody>
-</table>
-    </section>
+  <h2>結果</h2>
+  <p id="summaryText"></p>
+  <table>
+    <thead>
+      <tr>
+        <th>倍率</th>
+        <th>組み合わせ数</th>
+        <th>範囲</th>
+      </tr>
+    </thead>
+    <tbody id="resultBody">
+      <!-- JSで埋めます -->
+    </tbody>
+  </table>
+
+  <!-- ★ 各倍率ごとの内訳を出す場所 -->
+  <div id="breakdown"></div>
+</section>
   </div>
 
   <!-- 先に typechart.js を読み込む（データ＆ロジック） -->
   <script src="typechart.js?v=basic-1"></script>
   <!-- UIまわりの処理はこちらに -->
-  <script src="app.js?v=2025-11-22-c-1"></script>
+  <script src="app.js?v=2025-11-23-a"></script>
 </body>
 </html>

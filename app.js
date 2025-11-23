@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const resultSection = document.getElementById('result');
   const resultBody = document.getElementById('resultBody');
   const summaryText = document.getElementById('summaryText');
+  const breakdownDiv = document.getElementById('breakdown');
 
   // CSV を読み込んでから UI を初期化
   loadTypeChart('typechart.csv')
@@ -76,6 +77,16 @@ document.addEventListener('DOMContentLoaded', function () {
       '0': 0
     };
 
+    // ★ 倍率ごとの内訳一覧（表示用文字列）を保持する配列
+    const listByMul = {
+      '4': [],
+      '2': [],
+      '1': [],
+      '0.5': [],
+      '0.25': [],
+      '0': []
+    };
+
     const types = defenseTypes.slice(); // 防御側タイプ一覧
 
     // 1) 単タイプ 18通り
@@ -85,6 +96,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const key = normalizeMultiplier(best);
       if (counts.hasOwnProperty(key)) {
         counts[key]++;
+
+        // 日本語表記の単タイプ名を記録
+        const name = typeNameJa[def1] || def1;
+        listByMul[key].push(name);
       }
     }
 
@@ -97,6 +112,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const key = normalizeMultiplier(best);
         if (counts.hasOwnProperty(key)) {
           counts[key]++;
+
+          // 日本語表記の複合タイプ名を記録（例：みず／じめん）
+          const name1 = typeNameJa[def1] || def1;
+          const name2 = typeNameJa[def2] || def2;
+          const name = name1 + "／" + name2;
+          listByMul[key].push(name);
         }
       }
     }
@@ -124,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const tdRange = document.createElement('td');
 
-      // ★ 3列目に縦にまとめる
+      // 3列目にまとめ表示
       let rangeText = '';
       if (key === '4') {
         rangeText = '等倍以上';
@@ -145,6 +166,41 @@ document.addEventListener('DOMContentLoaded', function () {
       tr.appendChild(tdCount);
       tr.appendChild(tdRange);
       resultBody.appendChild(tr);
+    });
+
+    // ▼ 内訳（<details>）を生成
+
+    // 以前の結果をクリア
+    breakdownDiv.innerHTML = '';
+
+    // 倍率ごとの表示順
+    const orderForDetails = ['4', '2', '1', '0.5', '0.25', '0'];
+
+    orderForDetails.forEach((key) => {
+      const list = listByMul[key];
+      if (!list || list.length === 0) {
+        // その倍率に該当する組み合わせがない場合はスキップ
+        return;
+      }
+
+      // 文字列をソートしておくと見やすい
+      list.sort();
+
+      const details = document.createElement('details');
+
+      const summary = document.createElement('summary');
+      summary.textContent = key + '倍の内訳（' + list.length + '種類）';
+      details.appendChild(summary);
+
+      const ul = document.createElement('ul');
+      list.forEach((name) => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        ul.appendChild(li);
+      });
+
+      details.appendChild(ul);
+      breakdownDiv.appendChild(details);
     });
 
     // 選択タイプ一覧（英語）をそのまま表示

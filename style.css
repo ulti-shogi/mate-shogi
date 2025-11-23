@@ -94,3 +94,13 @@ th:first-child {
   display: flex;
   flex-direction: column; /* 「技1」「select」を縦に */
 }
+
+/* 内訳（details）のスタイル調整 */
+#breakdown {
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+
+#breakdown details {
+  margin-bottom: 4px;
+}
