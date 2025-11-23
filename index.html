@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>究極版タイプ相性カウントツール</title>
+  <title>タイプ相性カウントツール</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css?v=2025-11-23-1">
 </head>
@@ -11,67 +11,104 @@
     <h1>究極版タイプ相性カウントツール</h1>
 
     <form id="type-form">
-  <p>攻撃側のタイプを最大4つまで選んでください。</p>
+      <p>攻撃側のタイプを最大4つまで選んでください（未選択も可）。</p>
 
-  <div class="row">
-    <label>
-      技1：
-      <select id="attackType1" name="attackType1">
-        <option value="">-- 未選択 --</option>
-      </select>
-    </label>
+      <div class="row">
+        <label>
+          技1：
+          <select id="attackType1" name="attackType1">
+            <option value="">-- 未選択 --</option>
+          </select>
+        </label>
 
-    <label>
-      技2：
-      <select id="attackType2" name="attackType2">
-        <option value="">-- 未選択 --</option>
-      </select>
-    </label>
-  </div>
+        <label>
+          技2：
+          <select id="attackType2" name="attackType2">
+            <option value="">-- 未選択 --</option>
+          </select>
+        </label>
+      </div>
 
-  <div class="row">
-    <label>
-      技3：
-      <select id="attackType3" name="attackType3">
-        <option value="">-- 未選択 --</option>
-      </select>
-    </label>
+      <div class="row">
+        <label>
+          技3：
+          <select id="attackType3" name="attackType3">
+            <option value="">-- 未選択 --</option>
+          </select>
+        </label>
 
-    <label>
-      技4：
-      <select id="attackType4" name="attackType4">
-        <option value="">-- 未選択 --</option>
-      </select>
-    </label>
-  </div>
+        <label>
+          技4：
+          <select id="attackType4" name="attackType4">
+            <option value="">-- 未選択 --</option>
+          </select>
+        </label>
+      </div>
 
-  <button type="submit">計算する</button>
-</form>
+      <p>防御側のタイプを最大2つまで選んでください（未選択なら全体の範囲のみを表示します）。</p>
+
+      <div class="row">
+        <label>
+          防御タイプ1：
+          <select id="defenseType1" name="defenseType1">
+            <option value="">-- 未選択 --</option>
+          </select>
+        </label>
+
+        <label>
+          防御タイプ2：
+          <select id="defenseType2" name="defenseType2">
+            <option value="">-- 未選択 --</option>
+          </select>
+        </label>
+      </div>
+
+      <button type="submit">計算する</button>
+    </form>
 
     <section id="result" style="display: none;">
-  <h2>結果</h2>
-  <p id="summaryText"></p>
-  <table>
-    <thead>
-      <tr>
-        <th>倍率</th>
-        <th>組み合わせ数</th>
-        <th>範囲</th>
-      </tr>
-    </thead>
-    <tbody id="resultBody">
-      <!-- JSで埋めます -->
-    </tbody>
-  </table>
+      <h2>結果</h2>
+      <p id="summaryText"></p>
 
-  <!-- ★ 各倍率ごとの内訳を出す場所 -->
-  <div id="breakdown"></div>
-</section>
+      <!-- 防御側タイプが指定されているときだけ表示するブロック -->
+      <div id="defenseResult" style="display: none;">
+        <h3>対選択タイプの相性</h3>
+        <p id="defenseSummaryText"></p>
+        <table class="sub-table">
+          <thead>
+            <tr>
+              <th>技</th>
+              <th>タイプ</th>
+              <th>倍率</th>
+            </tr>
+          </thead>
+          <tbody id="defenseBody">
+            <!-- JSで埋めます -->
+          </tbody>
+        </table>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>倍率</th>
+            <th>組み合わせ数</th>
+            <th>範囲</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody">
+          <!-- JSで埋めます -->
+        </tbody>
+      </table>
+
+      <!-- 各倍率ごとの内訳（details） -->
+      <div id="breakdown"></div>
+    </section>
   </div>
 
   <!-- 先に typechart.js を読み込む（データ＆ロジック） -->
-  <script src="typechart.js?v=basic-1"></script>
+  <script src="typechart.js"></script>
   <!-- UIまわりの処理はこちらに -->
-  <script src="app.js?v=2025-11-23-a"></script>
+  <script src="app.js?v=2025-11-23-b"></script>
 </body>
 </html>

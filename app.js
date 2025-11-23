@@ -1,4 +1,4 @@
-// app.js
+// typetool-basic-1 extended: defense type match-up support
 
 // 日本語表示用マップ
 const typeNameJa = {
@@ -29,11 +29,18 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('attackType3'),
     document.getElementById('attackType4')
   ];
+  const defenseSelect1 = document.getElementById('defenseType1');
+  const defenseSelect2 = document.getElementById('defenseType2');
+
   const form = document.getElementById('type-form');
   const resultSection = document.getElementById('result');
   const resultBody = document.getElementById('resultBody');
   const summaryText = document.getElementById('summaryText');
   const breakdownDiv = document.getElementById('breakdown');
+
+  const defenseResultBox = document.getElementById('defenseResult');
+  const defenseSummaryText = document.getElementById('defenseSummaryText');
+  const defenseBody = document.getElementById('defenseBody');
 
   // CSV を読み込んでから UI を初期化
   loadTypeChart('typechart.csv')
@@ -47,6 +54,17 @@ document.addEventListener('DOMContentLoaded', function () {
           select.appendChild(option);
         });
       });
+
+      // 防御側セレクトボックスにも同じリストを流用
+      [defenseSelect1, defenseSelect2].forEach(select => {
+        if (!select) return;
+        defenseTypes.forEach(function (type) {
+          const option = document.createElement('option');
+          option.value = type;
+          option.textContent = typeNameJa[type];
+          select.appendChild(option);
+        });
+      });
     })
     .catch((err) => {
       console.error(err);
@@ -57,14 +75,31 @@ document.addEventListener('DOMContentLoaded', function () {
     event.preventDefault();
 
     // 選択された攻撃タイプ（未選択は除外）
-    const chosenTypes = attackSelects
-      .map(sel => sel.value)
-      .filter(v => v && v.length > 0);
+    const chosen = [];
+    attackSelects.forEach((sel, index) => {
+      if (!sel) return;
+      const v = sel.value;
+      if (v && v.length > 0) {
+        chosen.push({
+          type: v,           // 英語のタイプ名
+          slot: index + 1    // 技1〜4 の番号
+        });
+      }
+    });
 
-    if (chosenTypes.length === 0) {
+    if (chosen.length === 0) {
       alert('攻撃側のタイプを少なくとも1つは選択してください。');
       return;
     }
+
+    const chosenTypes = chosen.map(c => c.type);
+
+    // 防御側の選択
+    const defType1 = defenseSelect1 ? defenseSelect1.value : "";
+    const defType2 = defenseSelect2 ? defenseSelect2.value : "";
+    const hasDefense =
+      (defType1 && defType1.length > 0) ||
+      (defType2 && defType2.length > 0);
 
     // 倍率ごとのカウント用
     const multiplierKeys = ['4', '2', '1', '0.5', '0.25', '0'];
@@ -77,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '0': 0
     };
 
-    // ★ 倍率ごとの内訳一覧（表示用文字列）を保持する配列
+    // 倍率ごとの内訳一覧（表示用文字列）
     const listByMul = {
       '4': [],
       '2': [],
@@ -91,14 +126,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 1) 単タイプ 18通り
     for (let i = 0; i < types.length; i++) {
-      const def1 = types[i];
-      const best = getBestCoverage(chosenTypes, def1, null);
+      const d1 = types[i];
+      const best = getBestCoverage(chosenTypes, d1, null);
       const key = normalizeMultiplier(best);
       if (counts.hasOwnProperty(key)) {
         counts[key]++;
 
-        // 日本語表記の単タイプ名を記録
-        const name = typeNameJa[def1] || def1;
+        const name = typeNameJa[d1] || d1;
         listByMul[key].push(name);
       }
     }
@@ -106,32 +140,30 @@ document.addEventListener('DOMContentLoaded', function () {
     // 2) 複合タイプ C(18,2) = 153通り
     for (let i = 0; i < types.length; i++) {
       for (let j = i + 1; j < types.length; j++) {
-        const def1 = types[i];
-        const def2 = types[j];
-        const best = getBestCoverage(chosenTypes, def1, def2);
+        const d1 = types[i];
+        const d2 = types[j];
+        const best = getBestCoverage(chosenTypes, d1, d2);
         const key = normalizeMultiplier(best);
         if (counts.hasOwnProperty(key)) {
           counts[key]++;
 
-          // 日本語表記の複合タイプ名を記録（例：みず／じめん）
-          const name1 = typeNameJa[def1] || def1;
-          const name2 = typeNameJa[def2] || def2;
+          const name1 = typeNameJa[d1] || d1;
+          const name2 = typeNameJa[d2] || d2;
           const name = name1 + "／" + name2;
           listByMul[key].push(name);
         }
       }
     }
 
-    // 合計確認（デバッグ用）
+    // 合計確認
     const total = Object.values(counts).reduce((sum, v) => sum + v, 0);
-    console.log('total combinations =', total); // 171 になる想定
 
-    // 等倍以上／半減以下などを計算
+    // 等倍以上／半減以下など
     const totalSuper = counts['4'] + counts['2'] + counts['1'];       // 等倍以上
     const totalSuperEffective = counts['4'] + counts['2'];            // 抜群（2倍以上）
     const totalResist = counts['0.5'] + counts['0.25'] + counts['0']; // 半減以下
 
-    // 表の中身を更新
+    // ▼ 範囲テーブルを更新
     resultBody.innerHTML = '';
 
     multiplierKeys.forEach(function (key) {
@@ -144,8 +176,6 @@ document.addEventListener('DOMContentLoaded', function () {
       tdCount.textContent = counts[key] + ' 種類';
 
       const tdRange = document.createElement('td');
-
-      // 3列目にまとめ表示
       let rangeText = '';
       if (key === '4') {
         rangeText = '等倍以上';
@@ -169,25 +199,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ▼ 内訳（<details>）を生成
-
-    // 以前の結果をクリア
     breakdownDiv.innerHTML = '';
 
-    // 倍率ごとの表示順
     const orderForDetails = ['4', '2', '1', '0.5', '0.25', '0'];
-
     orderForDetails.forEach((key) => {
       const list = listByMul[key];
       if (!list || list.length === 0) {
-        // その倍率に該当する組み合わせがない場合はスキップ
         return;
       }
-
-      // 文字列をソートしておくと見やすい
       list.sort();
-
       const details = document.createElement('details');
-
       const summary = document.createElement('summary');
       summary.textContent = key + '倍の内訳（' + list.length + '種類）';
       details.appendChild(summary);
@@ -203,9 +224,56 @@ document.addEventListener('DOMContentLoaded', function () {
       breakdownDiv.appendChild(details);
     });
 
-    // 選択タイプ一覧（英語）をそのまま表示
-    const typeListText = chosenTypes.join(', ');
+    // ▼ 防御側が指定されていれば、対そのタイプの相性一覧を表示
+    if (hasDefense) {
+      const def1Label = defType1 ? (typeNameJa[defType1] || defType1) : null;
+      const def2Label = defType2 ? (typeNameJa[defType2] || defType2) : null;
+      let defenseLabel = '';
+      if (def1Label && def2Label) {
+        defenseLabel = def1Label + '／' + def2Label;
+      } else if (def1Label) {
+        defenseLabel = def1Label;
+      } else if (def2Label) {
+        defenseLabel = def2Label;
+      }
 
+      defenseBody.innerHTML = '';
+
+      chosen.forEach((info) => {
+        const atkType = info.type;
+        const slot = info.slot;
+
+        const tr = document.createElement('tr');
+
+        const tdSlot = document.createElement('td');
+        tdSlot.textContent = '技' + slot;
+
+        const tdType = document.createElement('td');
+        tdType.textContent = typeNameJa[atkType] || atkType;
+
+        const tdMul = document.createElement('td');
+        const mult = getEffectiveness(atkType, defType1 || null, defType2 || null);
+        tdMul.textContent = formatMultiplier(mult);
+
+        tr.appendChild(tdSlot);
+        tr.appendChild(tdType);
+        tr.appendChild(tdMul);
+        defenseBody.appendChild(tr);
+      });
+
+      defenseSummaryText.textContent =
+        '防御タイプ「' + defenseLabel + '」に対する各技の相性です。';
+
+      defenseResultBox.style.display = 'block';
+    } else {
+      // 防御側が未指定なら、このブロックは非表示
+      defenseResultBox.style.display = 'none';
+      defenseBody.innerHTML = '';
+      defenseSummaryText.textContent = '';
+    }
+
+    // ▼ サマリー文
+    const typeListText = chosenTypes.join(', ');
     summaryText.textContent =
       '攻撃タイプ「' + typeListText +
       '」で攻撃すると仮定した場合に、全171通り（単タイプ18＋複合タイプ153）のタイプそれぞれに対して、' +
@@ -218,11 +286,6 @@ document.addEventListener('DOMContentLoaded', function () {
    * 選択した複数の攻撃タイプの中で、
    * その防御側（単タイプ or 複合タイプ）に対して
    * 「最も高いダメージ倍率」を返します。
-   *
-   * @param {string[]} attackTypeList - 攻撃タイプ配列
-   * @param {string} defenseType1 - 防御タイプ1
-   * @param {string|null} defenseType2 - 防御タイプ2（なければ null）
-   * @returns {number} 最高倍率
    */
   function getBestCoverage(attackTypeList, defenseType1, defenseType2) {
     let best = 0; // 0倍（全て無効）のケースもあり得るので 0 からスタート
@@ -238,8 +301,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /**
    * 浮動小数の誤差をならして、'4' / '2' / '1' / '0.5' / '0.25' / '0' のいずれかの文字列に正規化します。
-   * @param {number} value
-   * @returns {string}
    */
   function normalizeMultiplier(value) {
     const v = Math.round(value * 100) / 100;
@@ -258,5 +319,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (v > 0.375) return '0.5';
     if (v > 0.125) return '0.25';
     return '0';
+  }
+
+  /**
+   * 単一の倍率を、表示用テキストに変換する
+   */
+  function formatMultiplier(value) {
+    const key = normalizeMultiplier(value);
+    if (key === '4') return '4倍';
+    if (key === '2') return '2倍';
+    if (key === '1') return '等倍';
+    if (key === '0.5') return '0.5倍';
+    if (key === '0.25') return '0.25倍';
+    return '無効（0倍）';
   }
 });
