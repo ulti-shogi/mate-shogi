@@ -273,11 +273,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ▼ サマリー文
-    const typeListText = chosenTypes.join(', ');
+    // 日本語表記へ変換
+    const typeListJa = chosenTypes.map(t => typeNameJa[t] || t).join('・');
+
     summaryText.textContent =
-      '攻撃タイプ「' + typeListText +
-      '」で攻撃すると仮定した場合に、全171通り（単タイプ18＋複合タイプ153）のタイプそれぞれに対して、' +
-      '最もダメージが入る技の倍率ごとの内訳です。（合計 ' + total + ' 通り）';
+  '攻撃タイプ「' + typeListJa +
+  '」で攻撃すると仮定した場合に、全171通り（単タイプ18＋複合タイプ153）のタイプそれぞれに対して、' +
+  '最もダメージが入る技の倍率ごとの内訳です。（合計 ' + total + ' 通り）';
 
     resultSection.style.display = 'block';
   });

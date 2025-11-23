@@ -67,13 +67,16 @@
     </form>
 
     <section id="result" style="display: none;">
-      <h2>結果</h2>
-      <p id="summaryText"></p>
+      
 
       <!-- 防御側タイプが指定されているときだけ表示するブロック -->
       <div id="defenseResult" style="display: none;">
-        <h3>対選択タイプの相性</h3>
+        <h2>対選択タイプの相性</h2>
         <p id="defenseSummaryText"></p>
+
+    <h2>技範囲一覧表</h2>
+      <p id="summaryText"></p>
+          
         <table class="sub-table">
           <thead>
             <tr>
@@ -109,6 +112,6 @@
   <!-- 先に typechart.js を読み込む（データ＆ロジック） -->
   <script src="typechart.js?v=ghost-dark-change"></script>
   <!-- UIまわりの処理はこちらに -->
-  <script src="app.js?v=2025-11-23-b"></script>
+  <script src="app.js?v=2025-11-23-c"></script>
 </body>
 </html>
