@@ -1,108 +1,257 @@
-/* typetool-basic-1 */ 
-
-/* 画面全体の基本設定 */
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  margin: 0;
-  background-color: #f7f7f7;
-  line-height: 1.6;
+    font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background-color: #f5f5f0;
+    color: #333;
+    margin: 0;
+    padding: 10px;
 }
 
-/* 中央寄せ用のラッパー */
-.wrapper {
-  max-width: 480px;        /* スマホ向けの幅 */
-  margin: 0 auto;          /* 画面中央に配置 */
-  padding: 16px;
-  background-color: #ffffff;
-  box-sizing: border-box;
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow-x: auto;
 }
 
-/* 見出し */
 h1 {
-  font-size: 1.3rem;
-  margin: 0 0 0.75rem;
+    text-align: center;
+    color: #1a3622;
+    border-bottom: 3px solid #cba135;
+    padding-bottom: 10px;
 }
 
-h2 {
-  font-size: 1.1rem;
-  margin: 1.2rem 0 0.4rem;
+/* ⬇⬇ 検索ボックスがきれいに並ぶように変更 ⬇⬇ */
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
-/* フォームまわり */
-form {
-  margin-bottom: 1.5rem;
+#searchInput {
+    flex-grow: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #cba135;
+    border-radius: 5px;
+    max-width: 400px;
 }
+/* ⬆⬆ ここまで ⬆⬆ */
 
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-select {
-  margin-top: 0.25rem;
-  padding: 4px 6px;
-  font-size: 0.95rem;
-}
-
-button {
-  display: inline-block;
-  margin-top: 0.5rem;
-  padding: 6px 12px;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
-/* 結果エリア */
-section#result {
-  margin-top: 1rem;
-}
-
-#summaryText {
-  font-size: 0.9rem;
-}
-
-/* テーブル */
 table {
-  border-collapse: collapse;
-  margin-top: 0.5rem;
-  width: 100%;            /* スマホでは横幅いっぱい使う */
-  font-size: 0.9rem;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 th, td {
-  border: 1px solid #ccc;
-  padding: 4px 6px;
-  text-align: right;
+    padding: 8px 5px;
+    text-align: center;
+    border: 1px solid #ddd;
+    font-size: 14px;
 }
 
 th {
-  background-color: #f0f0f0;
+    background-color: #f0ebd8;
+    color: #1a3622;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
-td:first-child,
-th:first-child {
-  text-align: left;
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+th.sortable:hover {
+    background-color: #e3decc;
+}
+.sort-icon {
+    font-size: 12px;
+    margin-left: 4px;
+    color: #cba135;
+}
+th.asc .sort-icon::after { content: '▲'; }
+th.desc .sort-icon::after { content: '▼'; }
+
+.dynamic-select {
+    padding: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #1a3622;
+    background-color: #fff;
+    border: 1px solid #cba135;
+    border-radius: 4px;
+    cursor: pointer;
+    max-width: 120px;
 }
 
-.row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;  /* スマホ向けの程よい余白 */
-  margin-bottom: 12px;
+tr:hover {
+    background-color: #faf9f5;
 }
 
-.row label {
-  flex: 1;             /* 均等に伸びる */
-  display: flex;
-  flex-direction: column; /* 「技1」「select」を縦に */
+.empty-message {
+    text-align: center;
+    color: #999;
 }
 
-/* 内訳（details）のスタイル調整 */
-#breakdown {
-  margin-top: 12px;
-  font-size: 0.9rem;
+.tablet-col, .pc-col { display: none; }
+@media (min-width: 600px) { .tablet-col { display: table-cell; } }
+@media (min-width: 900px) { .pc-col { display: table-cell; } }
+
+/* =========================================
+   🏠 トップページ (index.html) 専用のデザイン
+   ========================================= */
+
+.header-section {
+    text-align: center;
+    padding: 30px 10px 10px;
 }
 
-#breakdown details {
-  margin-bottom: 4px;
+.header-section h1 {
+    font-size: 32px;
+    border-bottom: none;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: #555;
+    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: 30px;
+}
+
+.main-menu {
+    padding: 30px;
+}
+
+/* カードを並べるグリッド（スマホは縦1列、PCは横2列に自動調整） */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+/* カードの基本デザイン */
+.menu-card {
+    background: #fff;
+    border: 2px solid #e3decc;
+    border-radius: 10px;
+    padding: 20px;
+    text-decoration: none;
+    color: #333;
+    position: relative;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-icon {
+    font-size: 30px;
+    margin-bottom: 10px;
+}
+
+.menu-card h2 {
+    color: #1a3622;
+    font-size: 18px;
+    margin: 0 0 10px 0;
+    border-bottom: 1px solid #e3decc;
+    padding-bottom: 8px;
+}
+
+.menu-card p {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+    margin: 0 0 15px 0;
+    flex-grow: 1; /* 文章の長さが違ってもボタン位置を揃える */
+}
+
+/* 公開中のカード（押せる状態） */
+.active-card {
+    border-color: #cba135;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.active-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(203, 161, 53, 0.2);
+}
+
+/* 準備中のカード（灰色で押せない状態） */
+.disabled-card {
+    background-color: #faf9f5;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.disabled-card h2, .disabled-card p {
+    color: #999;
+}
+
+/* 右上の小さなラベル */
+.status-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: #cba135;
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.status-badge.waiting {
+    background-color: #ccc;
+}
+
+/* 更新履歴セクション */
+.whats-new {
+    background: #faf9f5;
+    border-left: 5px solid #1a3622;
+    padding: 15px 20px;
+    border-radius: 0 8px 8px 0;
+}
+
+.whats-new h3 {
+    margin-top: 0;
+    color: #1a3622;
+    font-size: 16px;
+}
+
+.whats-new ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.whats-new li {
+    font-size: 13px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed #ddd;
+    padding-bottom: 8px;
+}
+
+.whats-new li:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.date {
+    font-weight: bold;
+    color: #cba135;
+    margin-right: 10px;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    color: #999;
 }

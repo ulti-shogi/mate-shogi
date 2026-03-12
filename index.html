@@ -1,117 +1,63 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>タイプ相性カウントツール</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css?v=2025-11-23-1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>将棋の殿堂 - トップページ</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="wrapper">
-    <h1>究極版タイプ相性カウントツール</h1>
 
-    <form id="type-form">
-      <p>攻撃側のタイプを最大4つまで選んでください（未選択も可）。</p>
+<div class="header-section">
+    <h1>将棋の殿堂</h1>
+    <p class="subtitle">歴代の棋士データ、タイトル戦の歴史、各種記録を網羅した非公式データベース</p>
+</div>
 
-      <div class="row">
-        <label>
-          技1：
-          <select id="attackType1" name="attackType1">
-            <option value="">-- 未選択 --</option>
-          </select>
-        </label>
+<div class="container main-menu">
+    <div class="card-grid">
+        
+        <a href="kishi.html" class="menu-card active-card">
+            <div class="card-icon">🗂️</div>
+            <h2>棋士プロフィール検索</h2>
+            <p>現役から引退・物故棋士まで、昇段日や年齢などを自由に並べ替え・複合検索できます。</p>
+            <span class="status-badge">公開中</span>
+        </a>
 
-        <label>
-          技2：
-          <select id="attackType2" name="attackType2">
-            <option value="">-- 未選択 --</option>
-          </select>
-        </label>
-      </div>
+        <div class="menu-card disabled-card">
+            <div class="card-icon">🏆</div>
+            <h2>タイトル戦の歴史</h2>
+            <p>名人戦、竜王戦など、歴代のタイトル獲得者や番勝負の記録をまとめます。</p>
+            <span class="status-badge waiting">準備中</span>
+        </div>
 
-      <div class="row">
-        <label>
-          技3：
-          <select id="attackType3" name="attackType3">
-            <option value="">-- 未選択 --</option>
-          </select>
-        </label>
+        <div class="menu-card disabled-card">
+            <div class="card-icon">👑</div>
+            <h2>歴代記録・ランキング</h2>
+            <p>最年少記録、連勝記録、通算勝利数などの各種ランキングデータを集計します。</p>
+            <span class="status-badge waiting">準備中</span>
+        </div>
 
-        <label>
-          技4：
-          <select id="attackType4" name="attackType4">
-            <option value="">-- 未選択 --</option>
-          </select>
-        </label>
-      </div>
+        <div class="menu-card disabled-card">
+            <div class="card-icon">📜</div>
+            <h2>将棋の歴史・名局集</h2>
+            <p>将棋界の歴史的な出来事や、語り継がれる名局の紹介コンテンツです。</p>
+            <span class="status-badge waiting">準備中</span>
+        </div>
 
-      <p>防御側のタイプを最大2つまで選んでください（未選択なら全体の範囲のみを表示します）。</p>
+    </div>
 
-      <div class="row">
-        <label>
-          防御タイプ1：
-          <select id="defenseType1" name="defenseType1">
-            <option value="">-- 未選択 --</option>
-          </select>
-        </label>
+    <div class="whats-new">
+        <h3>📢 更新履歴 (What's New)</h3>
+        <ul>
+            <li><span class="date">2026.03.12</span> 棋士プロフィール検索機能（並び替え・複合検索対応）を公開しました。</li>
+            <li><span class="date">2026.03.10</span> 『将棋の殿堂』プロジェクトを開始しました。</li>
+        </ul>
+    </div>
+</div>
 
-        <label>
-          防御タイプ2：
-          <select id="defenseType2" name="defenseType2">
-            <option value="">-- 未選択 --</option>
-          </select>
-        </label>
-      </div>
+<footer>
+    <p>&copy; 2026 将棋の殿堂</p>
+</footer>
 
-      <button type="submit">計算する</button>
-    </form>
-
-    <section id="result" style="display: none;">
-      
-
-      <!-- 防御側タイプが指定されているときだけ表示するブロック -->
-      <div id="defenseResult" style="display: none;">
-        <h2>対選択タイプの相性</h2>
-        <p id="defenseSummaryText"></p>
-          
-        <table class="sub-table">
-          <thead>
-            <tr>
-              <th>技</th>
-              <th>タイプ</th>
-              <th>倍率</th>
-            </tr>
-          </thead>
-          <tbody id="defenseBody">
-            <!-- JSで埋めます -->
-          </tbody>
-        </table>
-      </div>
-
-        <h2>技範囲一覧表</h2>
-      <p id="summaryText"></p>
-
-      <table>
-        <thead>
-          <tr>
-            <th>倍率</th>
-            <th>組み合わせ数</th>
-            <th>範囲</th>
-          </tr>
-        </thead>
-        <tbody id="resultBody">
-          <!-- JSで埋めます -->
-        </tbody>
-      </table>
-
-      <!-- 各倍率ごとの内訳（details） -->
-      <div id="breakdown"></div>
-    </section>
-  </div>
-
-  <!-- 先に typechart.js を読み込む（データ＆ロジック） -->
-  <script src="typechart.js?v=change-3"></script>
-  <!-- UIまわりの処理はこちらに -->
-  <script src="app.js?v=2025-11-23-c"></script>
 </body>
 </html>
