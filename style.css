@@ -13,7 +13,6 @@ body {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    /* ⬇ はみ出た表を横スクロールさせる魔法の1行（すでに入っています） */
     overflow-x: auto; 
 }
 
@@ -47,13 +46,13 @@ table {
     border-collapse: collapse;
 }
 
-/* ⬇⬇ 修正点①：文字が2列に崩れるのを完全に防ぐ ⬇⬇ */
+/* ⬇⬇ 修正点①：全体の余白と文字サイズを少し締める ⬇⬇ */
 th, td {
-    padding: 12px 8px; /* スマホでもタップしやすく上下の余白を少し広げました */
+    padding: 8px 4px; /* 左右の余白を削って横幅を節約 */
     text-align: center;
     border: 1px solid #ddd;
-    font-size: 14px;
-    white-space: nowrap; /* 👈 これが絶対に改行させない強い命令です */
+    font-size: 13px;  /* 14px👉13pxにして収まりやすく */
+    white-space: nowrap; 
 }
 
 th {
@@ -65,49 +64,51 @@ th {
 th.sortable {
     cursor: pointer;
     user-select: none;
+    padding-top: 6px;
+    padding-bottom: 6px;
 }
 th.sortable:hover {
     background-color: #e3decc;
 }
 
-/* ⬇⬇ 修正点②：誤タップを防ぐ、押しやすい「並び替えボタン」に変更 ⬇⬇ */
-.sort-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;    /* 指で押しやすいサイズに拡大 */
-    height: 30px;
-    margin-left: 6px;
-    background-color: #fff;
-    border: 1px solid #cba135;
-    border-radius: 4px;
-    font-size: 14px;
-    vertical-align: middle;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-/* 並び替えていない時のデフォルトアイコン（上下矢印） */
-.sort-icon::after { content: '↕'; color: #ccc; }
-
-/* 昇順・降順の時は色を変えて目立たせる */
-th.asc .sort-icon { background-color: #cba135; border-color: #cba135; }
-th.asc .sort-icon::after { content: '▲'; color: #fff; }
-
-th.desc .sort-icon { background-color: #cba135; border-color: #cba135; }
-th.desc .sort-icon::after { content: '▼'; color: #fff; }
-/* ⬆⬆ ここまで ⬆⬆ */
-
-
+/* ⬇⬇ 修正点②：プルダウンを中央にドカッと置く ⬇⬇ */
 .dynamic-select {
-    padding: 6px 4px;
-    font-size: 14px;
+    display: block; /* 要素をブロック化して強制改行させる */
+    margin: 0 auto; /* 真ん中寄せ */
+    padding: 4px 2px;
+    font-size: 13px;
     font-weight: bold;
     color: #1a3622;
     background-color: #fff;
     border: 1px solid #cba135;
     border-radius: 4px;
     cursor: pointer;
+    max-width: 110px; /* 横に広がりすぎないように制限 */
 }
+
+/* ⬇⬇ 修正点③：ボタンを「プルダウンの下」に配置する魔法 ⬇⬇ */
+.sort-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;             /* 指で押しやすい横幅 */
+    height: 24px;            /* 高さは控えめにして見出しが伸びすぎるのを防ぐ */
+    margin: 6px auto 0 auto; /* 上に6pxの隙間をあけて中央配置（これで下に落ちる） */
+    background-color: #fff;
+    border: 1px solid #cba135;
+    border-radius: 4px;
+    font-size: 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.sort-icon::after { content: '↕'; color: #ccc; }
+
+th.asc .sort-icon { background-color: #cba135; border-color: #cba135; }
+th.asc .sort-icon::after { content: '▲'; color: #fff; }
+
+th.desc .sort-icon { background-color: #cba135; border-color: #cba135; }
+th.desc .sort-icon::after { content: '▼'; color: #fff; }
+
 
 tr:hover {
     background-color: #faf9f5;
