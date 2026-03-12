@@ -13,7 +13,8 @@ body {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    overflow-x: auto;
+    /* ⬇ はみ出た表を横スクロールさせる魔法の1行（すでに入っています） */
+    overflow-x: auto; 
 }
 
 h1 {
@@ -23,7 +24,6 @@ h1 {
     padding-bottom: 10px;
 }
 
-/* ⬇⬇ 検索ボックスがきれいに並ぶように変更 ⬇⬇ */
 .controls {
     display: flex;
     justify-content: space-between;
@@ -41,25 +41,25 @@ h1 {
     border-radius: 5px;
     max-width: 400px;
 }
-/* ⬆⬆ ここまで ⬆⬆ */
 
 table {
     width: 100%;
     border-collapse: collapse;
 }
 
+/* ⬇⬇ 修正点①：文字が2列に崩れるのを完全に防ぐ ⬇⬇ */
 th, td {
-    padding: 8px 5px;
+    padding: 12px 8px; /* スマホでもタップしやすく上下の余白を少し広げました */
     text-align: center;
     border: 1px solid #ddd;
     font-size: 14px;
+    white-space: nowrap; /* 👈 これが絶対に改行させない強い命令です */
 }
 
 th {
     background-color: #f0ebd8;
     color: #1a3622;
     font-weight: bold;
-    white-space: nowrap;
 }
 
 th.sortable {
@@ -69,24 +69,44 @@ th.sortable {
 th.sortable:hover {
     background-color: #e3decc;
 }
+
+/* ⬇⬇ 修正点②：誤タップを防ぐ、押しやすい「並び替えボタン」に変更 ⬇⬇ */
 .sort-icon {
-    font-size: 12px;
-    margin-left: 4px;
-    color: #cba135;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;    /* 指で押しやすいサイズに拡大 */
+    height: 30px;
+    margin-left: 6px;
+    background-color: #fff;
+    border: 1px solid #cba135;
+    border-radius: 4px;
+    font-size: 14px;
+    vertical-align: middle;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
-th.asc .sort-icon::after { content: '▲'; }
-th.desc .sort-icon::after { content: '▼'; }
+
+/* 並び替えていない時のデフォルトアイコン（上下矢印） */
+.sort-icon::after { content: '↕'; color: #ccc; }
+
+/* 昇順・降順の時は色を変えて目立たせる */
+th.asc .sort-icon { background-color: #cba135; border-color: #cba135; }
+th.asc .sort-icon::after { content: '▲'; color: #fff; }
+
+th.desc .sort-icon { background-color: #cba135; border-color: #cba135; }
+th.desc .sort-icon::after { content: '▼'; color: #fff; }
+/* ⬆⬆ ここまで ⬆⬆ */
+
 
 .dynamic-select {
-    padding: 4px;
-    font-size: 13px;
+    padding: 6px 4px;
+    font-size: 14px;
     font-weight: bold;
     color: #1a3622;
     background-color: #fff;
     border: 1px solid #cba135;
     border-radius: 4px;
     cursor: pointer;
-    max-width: 120px;
 }
 
 tr:hover {
@@ -128,7 +148,6 @@ tr:hover {
     padding: 30px;
 }
 
-/* カードを並べるグリッド（スマホは縦1列、PCは横2列に自動調整） */
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -136,7 +155,6 @@ tr:hover {
     margin-bottom: 40px;
 }
 
-/* カードの基本デザイン */
 .menu-card {
     background: #fff;
     border: 2px solid #e3decc;
@@ -168,10 +186,9 @@ tr:hover {
     color: #666;
     line-height: 1.5;
     margin: 0 0 15px 0;
-    flex-grow: 1; /* 文章の長さが違ってもボタン位置を揃える */
+    flex-grow: 1;
 }
 
-/* 公開中のカード（押せる状態） */
 .active-card {
     border-color: #cba135;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -182,7 +199,6 @@ tr:hover {
     box-shadow: 0 8px 15px rgba(203, 161, 53, 0.2);
 }
 
-/* 準備中のカード（灰色で押せない状態） */
 .disabled-card {
     background-color: #faf9f5;
     opacity: 0.7;
@@ -193,7 +209,6 @@ tr:hover {
     color: #999;
 }
 
-/* 右上の小さなラベル */
 .status-badge {
     position: absolute;
     top: 15px;
@@ -210,7 +225,6 @@ tr:hover {
     background-color: #ccc;
 }
 
-/* 更新履歴セクション */
 .whats-new {
     background: #faf9f5;
     border-left: 5px solid #1a3622;
