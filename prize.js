@@ -11,7 +11,6 @@ const sortState = {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-    // ⬇⬇ 魔法の処理：prize.csv と kishi.csv を「同時に」読み込む ⬇⬇
     Promise.all([
         fetch('prize.csv').then(res => { if(!res.ok) throw new Error('prize.csv失敗'); return res.text(); }),
         fetch('kishi.csv').then(res => { if(!res.ok) throw new Error('kishi.csv失敗'); return res.text(); })
@@ -28,10 +27,12 @@ function processCSV(prizeText, kishiText) {
     const kishiLines = kishiText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     const birthYearMap = {};
     for (let i = 1; i < kishiLines.length; i++) {
+        // kishi.csvは通常のカンマ区切りでOK
         const row = kishiLines[i].split(',');
         if (row.length >= 3 && row[2]) {
-            const name = row[1];
-            const birthYear = parseInt(row[2].split(/[-\/]/)[0]); // 生年月日から「年」だけを抽出
+            // 名前からスペース（全角・半角）を完全に消し去ってキーにする（表記揺れ対策）
+            const name = row[1].replace(/[\s　]/g, '').replace(/"/g, '');
+            const birthYear = parseInt(row[2].split(/[-\/]/)[0]);
             birthYearMap[name] = birthYear;
         }
     }
@@ -40,35 +41,60 @@ function processCSV(prizeText, kishiText) {
     const prizeLines = prizeText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     prizeData = [];
     
+    // どんな形式（"付き、カンマ付き）が来ても絶対に崩れない読み込み処理
     for (let i = 1; i < prizeLines.length; i++) {
-        // 余計な「"」や「,」がなくなったので、単純にカンマで分割するだけでOK！
-        const row = prizeLines[i].split(',');
+        let text = prizeLines[i];
+        let row = [];
+        let cur = "";
+        let inQuote = false;
+        for (let j = 0; j < text.length; j++) {
+            let char = text[j];
+            if (char === '"') {
+                if (inQuote && text[j+1] === '"') { cur += '"'; j++; } 
+                else { inQuote = !inQuote; }
+            } else if (char === ',' && !inQuote) {
+                row.push(cur); cur = "";
+            } else {
+                cur += char;
+            }
+        }
+        row.push(cur);
+        
         if (row.length < 4) continue;
         
         const year = parseInt(row[0]);
         const rank = parseInt(row[1]);
-        const name = row[2];
-        const amount = parseInt(row[3]);
-        const title = row[4] ? row[4] : "-";
         
-        // ⬇⬇ 年齢の自動計算（西暦 - 生まれ年） ⬇⬇
+        // 名前からスペースと"を消して、kishi.csvのキーと完全に一致させる
+        const name = row[2].replace(/[\s　]/g, '').replace(/"/g, '');
+        
+        // 金額の中にある「,」と「"」を強制的に消し去ってから数値化する
+        const amountStr = row[3].replace(/,/g, '').replace(/"/g, '');
+        const amount = parseInt(amountStr);
+        
+        const title = row[4] ? row[4].replace(/"/g, '') : "-";
+        
+        // 年齢の自動計算
         let age = "-";
         if (birthYearMap[name]) {
             age = year - birthYearMap[name];
         }
+
+        // 金額がエラー（文字など）になっていたら無視
+        if(isNaN(amount)) continue;
 
         prizeData.push({
             year: year,
             rank: rank,
             name: name,
             amount: amount,
-            amountText: formatOkuMan(amount), // プログラム側で「〇億〇万円」にする
+            amountText: formatOkuMan(amount),
             title: title,
             age: age
         });
     }
 
-    // 機能3: 各年の上位10名の総計データを作成
+    // 機能3: 各年の上位10名の総計データ
     const yearTotals = {};
     const yearTop = {};
     prizeData.forEach(d => {
@@ -83,12 +109,11 @@ function processCSV(prizeText, kishiText) {
         topPlayer: yearTop[y] || "-"
     }));
 
-    // 機能4: 歴代1億円以上データを作成
+    // 機能4: 歴代1億円以上データ
     hundredData = prizeData.filter(d => d.amount >= 10000).sort((a,b) => b.amount - a.amount);
     hundredData.forEach((d, index) => { d.recordRank = index + 1; });
 }
 
-// 金額を「〇億〇〇万円」の形式に直す計算機能
 function formatOkuMan(manAmount) {
     if (manAmount < 10000) return manAmount.toLocaleString() + "万円";
     let oku = Math.floor(manAmount / 10000);
