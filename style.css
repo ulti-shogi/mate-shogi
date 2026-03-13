@@ -388,3 +388,11 @@ footer {
         font-size: 12px;
     }
 }
+
+/* ⬇⬇ 【追加】歴代1億円以上テーブルのみ、スマホで年齢列を非表示 ⬇⬇ */
+@media (max-width: 599.98px) {
+    #hundredTable th:nth-child(6),
+    #hundredTable td:nth-child(6) {
+        display: none;
+    }
+}
