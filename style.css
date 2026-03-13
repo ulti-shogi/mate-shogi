@@ -13,7 +13,7 @@ body {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    overflow-x: auto; 
+    overflow-x: auto;
 }
 
 h1 {
@@ -46,13 +46,12 @@ table {
     border-collapse: collapse;
 }
 
-/* ⬇⬇ 修正点①：全体の余白と文字サイズを少し締める ⬇⬇ */
 th, td {
-    padding: 8px 4px; /* 左右の余白を削って横幅を節約 */
+    padding: 8px 4px;
     text-align: center;
     border: 1px solid #ddd;
-    font-size: 13px;  /* 14px👉13pxにして収まりやすく */
-    white-space: nowrap; 
+    font-size: 13px;
+    white-space: nowrap;
 }
 
 th {
@@ -71,10 +70,9 @@ th.sortable:hover {
     background-color: #e3decc;
 }
 
-/* ⬇⬇ 修正点②：プルダウンを中央にドカッと置く ⬇⬇ */
 .dynamic-select {
-    display: block; /* 要素をブロック化して強制改行させる */
-    margin: 0 auto; /* 真ん中寄せ */
+    display: block;
+    margin: 0 auto;
     padding: 4px 2px;
     font-size: 13px;
     font-weight: bold;
@@ -83,17 +81,16 @@ th.sortable:hover {
     border: 1px solid #cba135;
     border-radius: 4px;
     cursor: pointer;
-    max-width: 110px; /* 横に広がりすぎないように制限 */
+    max-width: 110px;
 }
 
-/* ⬇⬇ 修正点③：ボタンを「プルダウンの下」に配置する魔法 ⬇⬇ */
 .sort-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;             /* 指で押しやすい横幅 */
-    height: 24px;            /* 高さは控えめにして見出しが伸びすぎるのを防ぐ */
-    margin: 6px auto 0 auto; /* 上に6pxの隙間をあけて中央配置（これで下に落ちる） */
+    width: 36px;
+    height: 24px;
+    margin: 6px auto 0 auto;
     background-color: #fff;
     border: 1px solid #cba135;
     border-radius: 4px;
@@ -109,7 +106,6 @@ th.asc .sort-icon::after { content: '▲'; color: #fff; }
 th.desc .sort-icon { background-color: #cba135; border-color: #cba135; }
 th.desc .sort-icon::after { content: '▼'; color: #fff; }
 
-
 tr:hover {
     background-color: #faf9f5;
 }
@@ -122,6 +118,67 @@ tr:hover {
 .tablet-col, .pc-col { display: none; }
 @media (min-width: 600px) { .tablet-col { display: table-cell; } }
 @media (min-width: 900px) { .pc-col { display: table-cell; } }
+
+/* =========================================
+   📊 平均年齢ページ (average.html) 専用のデザイン
+   ========================================= */
+
+.average-card {
+    background: #fff;
+    border: 2px solid #cba135;
+    border-radius: 10px;
+    padding: 30px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(203, 161, 53, 0.1);
+}
+
+.average-title {
+    color: #1a3622;
+    font-size: 18px;
+    margin: 0 0 15px 0;
+}
+
+.average-value {
+    font-size: 42px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 15px;
+    letter-spacing: 2px;
+}
+
+.average-desc {
+    color: #666;
+    font-size: 13px;
+    margin: 0;
+}
+
+.average-controls {
+    background: #faf9f5;
+    padding: 15px;
+    border-radius: 8px;
+    justify-content: center;
+}
+
+/* ⬇⬇ 【追加】スマートフォン用（横幅600px未満）の調整 ⬇⬇ */
+@media (max-width: 599.98px) {
+    /* 1. 平均年齢の表示を一列に収めるためにフォントサイズを縮小 */
+    .average-value {
+        font-size: 28px; /* 42px👉28pxに */
+        letter-spacing: 1px;
+    }
+
+    /* 2. テーブルの「四段昇段日」の列（4列目）を非表示にする */
+    /* 見出しの4列目を非表示 */
+    #averageTable th:nth-child(4) {
+        display: none;
+    }
+    /* データ行の4列目を非表示 */
+    #averageTable td:nth-child(4) {
+        display: none;
+    }
+}
+/* ⬆⬆ ここまで ⬆⬆ */
 
 /* =========================================
    🏠 トップページ (index.html) 専用のデザイン
@@ -269,45 +326,4 @@ footer {
     padding: 20px;
     font-size: 12px;
     color: #999;
-}
-
-/* =========================================
-   📊 平均年齢ページ (average.html) 専用のデザイン
-   ========================================= */
-
-.average-card {
-    background: #fff;
-    border: 2px solid #cba135;
-    border-radius: 10px;
-    padding: 30px 20px;
-    text-align: center;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 10px rgba(203, 161, 53, 0.1);
-}
-
-.average-title {
-    color: #1a3622;
-    font-size: 18px;
-    margin: 0 0 15px 0;
-}
-
-.average-value {
-    font-size: 42px; /* ドカンと大きく表示！ */
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 15px;
-    letter-spacing: 2px;
-}
-
-.average-desc {
-    color: #666;
-    font-size: 13px;
-    margin: 0;
-}
-
-.average-controls {
-    background: #faf9f5;
-    padding: 15px;
-    border-radius: 8px;
-    justify-content: center; /* プルダウンを真ん中寄せ */
 }
