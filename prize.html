@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>賞金・対局料ランキング - 将棋の殿堂</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1><a href="index.html" style="text-decoration: none; color: inherit;">将棋の殿堂</a></h1>
+
+    <div class="average-card">
+        <h2 class="average-title" style="margin-bottom:0;">賞金・対局料ランキング</h2>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-target="panel-year">各年のランキング</button>
+        <button class="tab-btn" data-target="panel-player">棋士別成績</button>
+        <button class="tab-btn" data-target="panel-total">トップ10総額</button>
+        <button class="tab-btn" data-target="panel-100m">歴代1億円以上</button>
+    </div>
+
+    <div id="panel-year" class="panel active">
+        <div class="controls" style="justify-content: center;">
+            <label style="font-weight: bold; color: #1a3622;">対象年：
+                <select id="yearSelect" class="dynamic-select" style="max-width: 150px; margin-left: 10px;"></select>
+            </label>
+        </div>
+        <table id="yearTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-col="rank">順位<span class="sort-icon"></span></th>
+                    <th>棋士名</th>
+                    <th>段位・称号</th>
+                    <th class="sortable" data-col="amount">金額<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="age">年齢<span class="sort-icon"></span></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="panel-player" class="panel">
+        <div class="controls" style="justify-content: center;">
+            <label style="font-weight: bold; color: #1a3622;">棋士名：
+                <select id="playerSelect" class="dynamic-select" style="max-width: 200px; margin-left: 10px;"></select>
+            </label>
+        </div>
+        <table id="playerTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-col="year">西暦<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="rank">順位<span class="sort-icon"></span></th>
+                    <th>段位・称号</th>
+                    <th class="sortable" data-col="amount">金額<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="age">年齢<span class="sort-icon"></span></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="panel-total" class="panel">
+        <table id="totalTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-col="year">西暦<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="total">トップ10総額<span class="sort-icon"></span></th>
+                    <th>1位の棋士 (参考)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="panel-100m" class="panel">
+        <table id="hundredTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-col="recordRank">歴代順位<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="year">西暦<span class="sort-icon"></span></th>
+                    <th>棋士名</th>
+                    <th>段位・称号</th>
+                    <th class="sortable" data-col="amount">金額<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="age">年齢<span class="sort-icon"></span></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="prize.js"></script>
+</body>
+</html>
