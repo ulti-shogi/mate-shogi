@@ -11,51 +11,60 @@ const sortState = {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-    fetch('prize.csv')
-        .then(response => {
-            if (!response.ok) throw new Error('CSV読み込み失敗');
-            return response.text();
-        })
-        .then(csvText => {
-            processCSV(csvText);
-            setupUI();
-        })
-        .catch(error => console.error('エラー:', error));
+    // ⬇⬇ 魔法の処理：prize.csv と kishi.csv を「同時に」読み込む ⬇⬇
+    Promise.all([
+        fetch('prize.csv').then(res => { if(!res.ok) throw new Error('prize.csv失敗'); return res.text(); }),
+        fetch('kishi.csv').then(res => { if(!res.ok) throw new Error('kishi.csv失敗'); return res.text(); })
+    ])
+    .then(([prizeText, kishiText]) => {
+        processCSV(prizeText, kishiText);
+        setupUI();
+    })
+    .catch(error => console.error('エラー:', error));
 });
 
-function processCSV(csvText) {
-    const lines = csvText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
+function processCSV(prizeText, kishiText) {
+    // 1. kishi.csvから「名前」と「生まれ年」の辞書を作る
+    const kishiLines = kishiText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
+    const birthYearMap = {};
+    for (let i = 1; i < kishiLines.length; i++) {
+        const row = kishiLines[i].split(',');
+        if (row.length >= 3 && row[2]) {
+            const name = row[1];
+            const birthYear = parseInt(row[2].split(/[-\/]/)[0]); // 生年月日から「年」だけを抽出
+            birthYearMap[name] = birthYear;
+        }
+    }
+
+    // 2. prize.csvを読み込み、生まれ年辞書と合体させる
+    const prizeLines = prizeText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     prizeData = [];
     
-    // CSVを安全に分解（「"」の中のカンマで区切られないようにする魔法の処理）
-    for (let i = 1; i < lines.length; i++) {
-        let text = lines[i];
-        let row = [];
-        let cur = "";
-        let inQuote = false;
-        for (let j = 0; j < text.length; j++) {
-            let char = text[j];
-            if (char === '"') {
-                if (inQuote && text[j+1] === '"') { cur += '"'; j++; } 
-                else { inQuote = !inQuote; }
-            } else if (char === ',' && !inQuote) {
-                row.push(cur); cur = "";
-            } else {
-                cur += char;
-            }
+    for (let i = 1; i < prizeLines.length; i++) {
+        // 余計な「"」や「,」がなくなったので、単純にカンマで分割するだけでOK！
+        const row = prizeLines[i].split(',');
+        if (row.length < 4) continue;
+        
+        const year = parseInt(row[0]);
+        const rank = parseInt(row[1]);
+        const name = row[2];
+        const amount = parseInt(row[3]);
+        const title = row[4] ? row[4] : "-";
+        
+        // ⬇⬇ 年齢の自動計算（西暦 - 生まれ年） ⬇⬇
+        let age = "-";
+        if (birthYearMap[name]) {
+            age = year - birthYearMap[name];
         }
-        row.push(cur);
-        
-        if (row.length < 8) continue;
-        
+
         prizeData.push({
-            year: parseInt(row[0]),
-            rank: parseInt(row[1]),
-            name: row[2].replace(/"/g, ''),
-            amount: parseInt(row[3].replace(/,/g, '')), // カンマを消して純粋な数値にする
-            amountText: row[4].replace(/"/g, ''),
-            title: row[5] ? row[5].replace(/"/g, '') : "-",
-            age: parseInt(row[8]) || 0
+            year: year,
+            rank: rank,
+            name: name,
+            amount: amount,
+            amountText: formatOkuMan(amount), // プログラム側で「〇億〇万円」にする
+            title: title,
+            age: age
         });
     }
 
@@ -92,11 +101,9 @@ function setupUI() {
     const ySel = document.getElementById('yearSelect');
     const pSel = document.getElementById('playerSelect');
     
-    // 対象年のプルダウン作成
     const years = [...new Set(prizeData.map(d => d.year))].sort((a,b) => b - a);
     years.forEach(y => ySel.appendChild(new Option(y + "年", y)));
     
-    // 棋士名のプルダウン作成（ランクイン総額が多い順に並べる）
     const pTotals = {};
     prizeData.forEach(d => pTotals[d.name] = (pTotals[d.name] || 0) + d.amount);
     const players = Object.keys(pTotals).sort((a,b) => pTotals[b] - pTotals[a]);
@@ -105,7 +112,6 @@ function setupUI() {
     ySel.addEventListener('change', renderYearTable);
     pSel.addEventListener('change', renderPlayerTable);
 
-    // タブの切り替え処理
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -115,7 +121,6 @@ function setupUI() {
         });
     });
 
-    // 並び替え（ソート）ヘッダーのクリック処理
     document.querySelectorAll('th.sortable').forEach(th => {
         th.addEventListener('click', function() {
             let colId = this.dataset.col;
@@ -147,7 +152,7 @@ function applySort(dataArray, panelId) {
         let valA = a[colId];
         let valB = b[colId];
         let cmp = (typeof valA === 'string' && typeof valB === 'string') ? valA.localeCompare(valB) : valA - valB;
-        if (cmp === 0 && a.year && b.year) cmp = b.year - a.year; // 同点なら新しい年を上に
+        if (cmp === 0 && a.year && b.year) cmp = b.year - a.year;
         return asc ? cmp : -cmp;
     });
 }
@@ -161,8 +166,6 @@ function updateSortIcons(panelId) {
         }
     });
 }
-
-// --- 各テーブルの描画 ---
 
 function renderYearTable() {
     const ySel = document.getElementById('yearSelect');
@@ -188,7 +191,7 @@ function renderPlayerTable() {
     let viewData = prizeData.filter(d => d.name === pSel.value);
     applySort(viewData, 'panel-player');
     
-    let sum = viewData.reduce((acc, curr) => acc + curr.amount, 0); // 生涯ランクイン総額
+    let sum = viewData.reduce((acc, curr) => acc + curr.amount, 0);
     
     let html = viewData.map(d => `
         <tr>
