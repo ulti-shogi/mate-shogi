@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>免状授与者一覧 - 将棋の殿堂</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1><a href="index.html" style="text-decoration: none; color: inherit;">将棋の殿堂</a></h1>
+
+    <div class="average-card">
+        <h2 class="average-title" style="margin-bottom:0;">免状授与者一覧</h2>
+    </div>
+
+    <div class="controls" style="justify-content: center; margin-bottom: 20px;">
+        <input type="text" id="searchInput" placeholder="名前や備考（職業など）で検索..." style="max-width: 400px; width: 100%;">
+    </div>
+
+    <table id="menjoTable">
+        <thead>
+            <tr>
+                <th class="sortable" data-col="date">免状授与日<span class="sort-icon"></span></th>
+                <th class="sortable" data-col="name">氏名<span class="sort-icon"></span></th>
+                <th class="sortable" data-col="rankValue">允許段位<span class="sort-icon"></span></th>
+                <th>備考</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="4" class="empty-message">読み込み中...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script src="menjo.js"></script>
+</body>
+</html>
