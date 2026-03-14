@@ -396,3 +396,11 @@ footer {
         display: none;
     }
 }
+
+/* ⬇⬇ 【追加】免状授与一覧：スマホで備考列（5列目）を非表示 ⬇⬇ */
+@media (max-width: 599.98px) {
+    #menjoTable th:nth-child(5),
+    #menjoTable td:nth-child(5) {
+        display: none;
+    }
+}
