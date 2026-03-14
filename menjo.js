@@ -1,8 +1,7 @@
 let menjoData = [];
 let filteredData = [];
-let currentSort = { colId: 'date', asc: false }; // 初期は「免状授与日が新しい順」
+let currentSort = { colId: 'date', asc: false };
 
-// 段位を正しくソートするための裏の点数表
 const rankMap = {
     "初段": 1, "二段": 2, "三段": 3, "四段": 4, "五段": 5, "六段": 6, "七段": 7, "八段": 8, "九段": 9
 };
@@ -24,31 +23,49 @@ function processCSV(csvText) {
     const lines = csvText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     menjoData = [];
     
+    // どんな形式のCSVでも絶対にパニックにならない安全な読み込み処理
     for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',');
+        let text = lines[i];
+        let row = [];
+        let cur = "";
+        let inQuote = false;
+        for (let j = 0; j < text.length; j++) {
+            let char = text[j];
+            if (char === '"') {
+                if (inQuote && text[j+1] === '"') { cur += '"'; j++; } 
+                else { inQuote = !inQuote; }
+            } else if (char === ',' && !inQuote) {
+                row.push(cur); cur = "";
+            } else {
+                cur += char;
+            }
+        }
+        row.push(cur);
+        
         if (row.length < 4) continue;
         
         const dateStr = row[0];
         const name = row[1];
         const rank = row[2];
         const note = row[3];
+        // ⬇ 5列目（URL）があれば取得、なければ空欄にする
+        const url = row[4] ? row[4].trim() : "";
         
         menjoData.push({
             date: dateStr,
             name: name,
             rank: rank,
-            rankValue: rankMap[rank] || 0, // 点数表を使って数値化
-            note: note
+            rankValue: rankMap[rank] || 0,
+            note: note,
+            url: url
         });
     }
     filteredData = [...menjoData];
 }
 
 function setupUI() {
-    // 検索機能の設定
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', function() {
-        // 全角・半角スペースを無視して検索
         const query = this.value.toLowerCase().replace(/[\s　]/g, '');
         filteredData = menjoData.filter(d => {
             return d.name.toLowerCase().replace(/[\s　]/g, '').includes(query) || 
@@ -57,7 +74,6 @@ function setupUI() {
         renderTable();
     });
 
-    // 並び替え（ソート）ヘッダーのクリック処理
     document.querySelectorAll('#menjoTable th.sortable').forEach(th => {
         th.addEventListener('click', function() {
             let colId = this.dataset.col;
@@ -75,7 +91,6 @@ function setupUI() {
 }
 
 function renderTable() {
-    // ソート処理
     filteredData.sort((a, b) => {
         let valA = a[currentSort.colId];
         let valB = b[currentSort.colId];
@@ -89,29 +104,32 @@ function renderTable() {
             cmp = String(valA).localeCompare(String(valB));
         }
         
-        // 同点なら日付が新しい順を優先
         if (cmp === 0) {
             cmp = new Date(b.date).getTime() - new Date(a.date).getTime();
         }
         return currentSort.asc ? cmp : -cmp;
     });
 
-    // 描画
     const tbody = document.querySelector('#menjoTable tbody');
     if (filteredData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="empty-message">該当するデータがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-message">該当するデータがありません</td></tr>';
     } else {
-        tbody.innerHTML = filteredData.map(d => `
+        tbody.innerHTML = filteredData.map(d => {
+            // ⬇ URLがある人だけ「出典」というリンクを作る魔法
+            let linkHtml = d.url ? `<a href="${d.url}" target="_blank" style="color: #0066cc; text-decoration: underline; font-weight: bold;">出典</a>` : '-';
+            
+            return `
             <tr>
                 <td>${d.date}</td>
                 <td style="font-weight:bold;">${d.name}</td>
                 <td style="color:#cba135;">${d.rank}</td>
+                <td>${linkHtml}</td>
                 <td style="text-align: left; padding: 8px 10px;">${d.note}</td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
     }
 
-    // 見出しの「▲/▼」マークを更新
     document.querySelectorAll('#menjoTable th.sortable').forEach(th => {
         th.classList.remove('asc', 'desc');
         if (th.dataset.col === currentSort.colId) {
