@@ -17,8 +17,9 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function processCSV(gameText, kishiText) {
-    // 1. kishi.csvから「昇段日の入力箇所」を利用して段位と棋士番号の辞書を作成
     const kishiLines = kishiText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
+    
+    // kishi.csvから辞書を作成
     const kishiMap = {};
     for (let i = 1; i < kishiLines.length; i++) {
         const row = kishiLines[i].split(',');
@@ -26,7 +27,7 @@ function processCSV(gameText, kishiText) {
             const id = parseInt(row[0]);
             const name = row[1].replace(/[\s　]/g, '').replace(/"/g, '');
             
-            // kishi.htmlの時の最強ロジック復活！右の列(九段)から順に日付の有無をチェック
+            // 段位の判定（右から順に 8:nine, 7:eight, 6:seven, 5:six, 4:five, 3:four）
             let rankNum = 0;
             if (row.length > 8 && row[8] && row[8].trim() !== '') rankNum = 9;
             else if (row.length > 7 && row[7] && row[7].trim() !== '') rankNum = 8;
@@ -35,13 +36,25 @@ function processCSV(gameText, kishiText) {
             else if (row.length > 4 && row[4] && row[4].trim() !== '') rankNum = 5;
             else if (row.length > 3 && row[3] && row[3].trim() !== '') rankNum = 4;
 
-            kishiMap[name] = { id: isNaN(id) ? 9999 : id, rankNum: rankNum };
+            // 引退の判定（10列目：row[9] に日付があるかどうか）
+            let isRetired = false;
+            if (row.length > 9 && row[9] && row[9].trim() !== '') {
+                isRetired = true;
+            }
+
+            kishiMap[name] = { id: isNaN(id) ? 9999 : id, rankNum: rankNum, isRetired: isRetired };
         }
     }
 
     // 2. 序列（裏スコア）を計算する関数
     function calcPlayerScore(name) {
-        // 特別枠7名は絶対的なトップスコア
+        // ① kishi.csvにいない人（女流・アマなど）は一番下へ
+        if (!kishiMap[name]) return 99999; 
+
+        // ② 引退棋士は、現役棋士の下（50000番台）に配置し、棋士番号順に並べる
+        if (kishiMap[name].isRetired) return 50000 + kishiMap[name].id;
+
+        // ③ 現役の特別枠7名は絶対的なトップスコア
         if(name === "藤井聡太") return 1;
         if(name === "伊藤匠") return 2;
         if(name === "谷川浩司") return 3;
@@ -50,18 +63,13 @@ function processCSV(gameText, kishiText) {
         if(name === "森内俊之") return 6;
         if(name === "渡辺明") return 7;
 
-        // kishi.csvに存在する正規棋士（段位とIDでスコア化）
-        if(kishiMap[name]) {
-            const rankNum = kishiMap[name].rankNum;
-            if(rankNum > 0) {
-                // 例: 九段(10-9=1)*1000 + ID100 = 1100。数字が小さいほど上位。
-                return (10 - rankNum) * 1000 + kishiMap[name].id;
-            } else {
-                return 8000 + kishiMap[name].id; // 昇段日データがない棋士
-            }
+        // ④ 現役の一般棋士（段位優先、次に棋士番号順）
+        const rankNum = kishiMap[name].rankNum;
+        if(rankNum > 0) {
+            return (10 - rankNum) * 1000 + kishiMap[name].id;
+        } else {
+            return 8000 + kishiMap[name].id; 
         }
-        // 女流・アマチュアなどはリストの最後へ
-        return 99999;
     }
 
     function getPlayer(name) {
@@ -97,14 +105,12 @@ function processCSV(gameText, kishiText) {
         if(thousand) extra += (extra ? " / " : "") + thousand;
         if(broadcast) extra += (extra ? " / 放送:" : "放送:") + broadcast;
 
-        // 先手の処理（不戦勝「□」、不戦敗「■」を追加）
         if (p1) {
             let player1 = getPlayer(p1);
             player1.games.push({ date: date, match: match, mySengo: "先手", opponent: p2, result: r1, extra: extra });
             if (r1 === "○" || r1 === "□") player1.wins++;
             if (r1 === "●" || r1 === "■") player1.losses++;
         }
-        // 後手の処理
         if (p2) {
             let player2 = getPlayer(p2);
             player2.games.push({ date: date, match: match, mySengo: "後手", opponent: p1, result: r2, extra: extra });

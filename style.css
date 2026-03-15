@@ -404,3 +404,11 @@ footer {
         display: none;
     }
 }
+
+/* ⬇⬇ 【追加】2025年度勝敗一覧：スマホで「序列」列（1列目）を非表示 ⬇⬇ */
+@media (max-width: 599.98px) {
+    #summaryTable th:nth-child(1),
+    #summaryTable td:nth-child(1) {
+        display: none;
+    }
+}
