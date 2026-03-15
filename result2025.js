@@ -27,7 +27,7 @@ function processCSV(gameText, kishiText) {
             const id = parseInt(row[0]);
             const name = row[1].replace(/[\s　]/g, '').replace(/"/g, '');
             
-            // 段位の判定（右から順に 8:nine, 7:eight, 6:seven, 5:six, 4:five, 3:four）
+            // 段位の判定
             let rankNum = 0;
             if (row.length > 8 && row[8] && row[8].trim() !== '') rankNum = 9;
             else if (row.length > 7 && row[7] && row[7].trim() !== '') rankNum = 8;
@@ -46,15 +46,10 @@ function processCSV(gameText, kishiText) {
         }
     }
 
-    // 2. 序列（裏スコア）を計算する関数
     function calcPlayerScore(name) {
-        // ① kishi.csvにいない人（女流・アマなど）は一番下へ
         if (!kishiMap[name]) return 99999; 
-
-        // ② 引退棋士は、現役棋士の下（50000番台）に配置し、棋士番号順に並べる
         if (kishiMap[name].isRetired) return 50000 + kishiMap[name].id;
 
-        // ③ 現役の特別枠7名は絶対的なトップスコア
         if(name === "藤井聡太") return 1;
         if(name === "伊藤匠") return 2;
         if(name === "谷川浩司") return 3;
@@ -63,7 +58,6 @@ function processCSV(gameText, kishiText) {
         if(name === "森内俊之") return 6;
         if(name === "渡辺明") return 7;
 
-        // ④ 現役の一般棋士（段位優先、次に棋士番号順）
         const rankNum = kishiMap[name].rankNum;
         if(rankNum > 0) {
             return (10 - rankNum) * 1000 + kishiMap[name].id;
@@ -85,7 +79,6 @@ function processCSV(gameText, kishiText) {
         return playerStats[name];
     }
 
-    // 3. 2025.csvの対局結果を読み込む
     const gameLines = gameText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     for (let i = 1; i < gameLines.length; i++) {
         const row = gameLines[i].split(',');
@@ -122,7 +115,9 @@ function processCSV(gameText, kishiText) {
     summaryArray = Object.values(playerStats).map(p => {
         let total = p.wins + p.losses;
         let rate = total > 0 ? (p.wins / total) : 0;
-        let rateStr = rate.toFixed(3).replace(/^0\./, '.'); 
+        
+        // ⬇⬇ ここを変更：「.625」から「0.6250」の形式（小数点以下4桁）に ⬇⬇
+        let rateStr = rate.toFixed(4); 
         if (total === 0) rateStr = "-";
         
         return {
@@ -221,7 +216,10 @@ function renderHistoryTable() {
     const pData = playerStats[pSel.value];
     
     statsCard.style.display = "block";
-    let rateStr = pData.wins + pData.losses > 0 ? (pData.wins / (pData.wins + pData.losses)).toFixed(3).replace(/^0\./, '.') : "-";
+    
+    // ⬇⬇ ここも変更：「棋士別 対局履歴」のサマリー欄の勝率表示 ⬇⬇
+    let rateStr = pData.wins + pData.losses > 0 ? (pData.wins / (pData.wins + pData.losses)).toFixed(4) : "-";
+    
     statsCard.innerHTML = `2025年度成績： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）`;
 
     let games = [...pData.games].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
