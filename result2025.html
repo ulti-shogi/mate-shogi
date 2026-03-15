@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025年度 棋士別勝敗・対局履歴 - 将棋の殿堂</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1><a href="index.html" style="text-decoration: none; color: inherit;">将棋の殿堂</a></h1>
+
+    <div class="average-card">
+        <h2 class="average-title" style="margin-bottom:0;">2025年度 棋士別勝敗・対局履歴</h2>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-target="panel-summary">全棋士 勝敗一覧</button>
+        <button class="tab-btn" data-target="panel-history">棋士別 対局履歴</button>
+    </div>
+
+    <div id="panel-summary" class="panel active">
+        <table id="summaryTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-col="score">序列<span class="sort-icon"></span></th>
+                    <th>棋士名</th>
+                    <th>段位・称号</th>
+                    <th class="sortable" data-col="games">対局数<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="wins">勝<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="losses">負<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="winRate">勝率<span class="sort-icon"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="7" class="empty-message">データ読み込み中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="panel-history" class="panel">
+        <div class="controls" style="justify-content: center;">
+            <label style="font-weight: bold; color: #1a3622; display: flex; align-items: center;">棋士名：
+                <select id="playerSelect" class="dynamic-select" style="max-width: 200px; margin: 0; display: inline-block;"></select>
+            </label>
+        </div>
+        
+        <div id="playerStatsCard" style="background-color: #f0ebd8; padding: 10px; margin: 15px 0; border-radius: 6px; text-align: center; font-weight: bold; color: #1a3622; display: none;">
+            </div>
+
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>対局日</th>
+                    <th>棋戦</th>
+                    <th>先後</th>
+                    <th>対戦相手</th>
+                    <th>結果</th>
+                    <th>備考</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6" class="empty-message">棋士を選択してください</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="result2025.js"></script>
+</body>
+</html>
