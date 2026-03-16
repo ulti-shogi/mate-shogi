@@ -246,9 +246,9 @@ function renderTable() {
             <td>${k.number}</td>
             <td style="text-align: left;">${nameDisplay}</td>
             <td style="font-weight:bold; color:#1a3622;">${k.highestRank}</td>
-            <td class="pc-col">${formatDateString(k[k4]) || '-'}</td>
-            <td class="pc-col">${formatDateString(k[k5]) || '-'}</td>
-            <td class="pc-col">${formatDateString(k[k6]) || '-'}</td>
+            <td>${formatDateString(k[k4]) || '-'}</td>
+            <td class="tablet-col">${formatDateString(k[k5]) || '-'}</td>
+            <td class="tablet-col">${formatDateString(k[k6]) || '-'}</td>
             <td class="pc-col">${formatDateString(k[k7]) || '-'}</td>
             <td class="pc-col">${formatDateString(k[k8]) || '-'}</td>
         `;
