@@ -118,7 +118,7 @@ function processData(csvText) {
             status = 'retired';
         }
 
-        let proStartDate = kyu3 || kyu2 || kyu1 || dan1 || dan2;
+        let proStartDate = kyu3 || kyu2 || kyu1 || dan1 || dan2 || dan3 || dan4 || dan5 || dan6 || dan7;
 
         let currentAgeData = calculateCurrentAge(birthday, retire, passing);
         let activePeriodData = calculateActivePeriod(proStartDate, retire, passing);
