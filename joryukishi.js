@@ -249,9 +249,10 @@ function renderTable() {
         let nameDisplay = k.url ? `<a href="${k.url}" target="_blank" style="color: #cba135; font-weight: bold; text-decoration: none;">${k.name}</a>` : `<span style="font-weight: bold;">${k.name}</span>`;
 
         tr.innerHTML = `
-            <td>${index + 1}</td> <td style="text-align: left;">${nameDisplay}</td>
+            <td>${index + 1}</td>
+            <td style="text-align: left;">${nameDisplay}</td>
             <td style="font-weight:bold; color:#1a3622;">${k.highestRank}</td>
-            <td class="pc-col">${formatDateString(k[k4]) || '-'}</td>
+            <td>${formatDateString(k[k4]) || '-'}</td>
             <td class="tablet-col">${formatDateString(k[k5]) || '-'}</td>
             <td class="tablet-col">${formatDateString(k[k6]) || '-'}</td>
             <td class="pc-col">${formatDateString(k[k7]) || '-'}</td>
