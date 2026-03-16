@@ -1,5 +1,6 @@
 let kishiData = [];
 let currentSort = { colId: null, key: null, asc: true };
+let currentFilter = 'all'; // 現在のフィルターステータス
 
 window.addEventListener('DOMContentLoaded', () => {
     fetch('joryukishi.csv')
@@ -15,6 +16,16 @@ window.addEventListener('DOMContentLoaded', () => {
             const tbody = document.querySelector('#kishiTable tbody');
             tbody.innerHTML = `<tr><td colspan="8" class="empty-message">データの読み込みに失敗しました。</td></tr>`;
         });
+
+    // ▼▼ タブのイベントリスナー追加 ▼▼
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            currentFilter = e.target.dataset.filter;
+            renderTable();
+        });
+    });
 });
 
 function getPreciseDuration(startStr, endStr, isAge = true) {
@@ -74,13 +85,12 @@ function calculateActivePeriod(startStr, retireStr, passStr) {
 function processData(csvText) {
     const lines = csvText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     
-    // CSV Header: 女流棋士番号,女流棋士名,生年月日,女流３級,女流２級,女流１級,女流初段,女流二段,女流三段,女流四段,女流五段,女流六段,女流七段,引退日,没年月日,URL
     for (let i = 1; i < lines.length; i++) {
         let row = lines[i].split(',');
         if (row.length < 15) continue;
 
         let numStr = row[0].trim();
-        if (!numStr) continue; // 退会者など番号がない行はスキップ
+        if (!numStr) continue;
         let number = parseInt(numStr, 10);
         let name = row[1].trim();
         let birthday = row[2].trim();
@@ -98,7 +108,16 @@ function processData(csvText) {
         let passing = row[14] ? row[14].trim() : "";
         let url = row.length > 15 ? row[15].trim() : "";
 
-        // プロ入り日（最も古い昇級・昇段記録）を探す
+        // ▼▼ ステータス判定処理の追加 ▼▼
+        let status = 'active';
+        if (url === '') {
+            status = 'withdrawn';
+        } else if (passing !== '') {
+            status = 'deceased';
+        } else if (retire !== '') {
+            status = 'retired';
+        }
+
         let proStartDate = kyu3 || kyu2 || kyu1 || dan1 || dan2;
 
         let currentAgeData = calculateCurrentAge(birthday, retire, passing);
@@ -124,28 +143,18 @@ function processData(csvText) {
             number: number,
             name: name,
             url: url,
+            status: status, // 追加
             birthday: birthday,
-            kyu3: kyu3,
-            kyu2: kyu2,
-            kyu1: kyu1,
-            dan1: dan1,
-            dan2: dan2,
-            dan3: dan3,
-            dan4: dan4,
-            dan5: dan5,
-            dan6: dan6,
-            dan7: dan7,
-            retire: retire,
-            passing: passing,
-            highestRank: highestRank,
-            rankValue: rankValue,
-            ageText: currentAgeData.text,
-            ageValue: currentAgeData.sortValue,
-            activePeriod: activePeriodData.text,
-            activePeriodValue: activePeriodData.sortValue,
+            kyu3: kyu3, kyu2: kyu2, kyu1: kyu1,
+            dan1: dan1, dan2: dan2, dan3: dan3, dan4: dan4, dan5: dan5, dan6: dan6, dan7: dan7,
+            retire: retire, passing: passing,
+            highestRank: highestRank, rankValue: rankValue,
+            ageText: currentAgeData.text, ageValue: currentAgeData.sortValue,
+            activePeriod: activePeriodData.text, activePeriodValue: activePeriodData.sortValue,
             
             ageKyu3: getPreciseDuration(birthday, kyu3, true).text,
             ageKyu3Value: getPreciseDuration(birthday, kyu3, true).sortValue,
+            // ... (他のプロパティはそのまま維持)
             ageKyu2: getPreciseDuration(birthday, kyu2, true).text,
             ageKyu2Value: getPreciseDuration(birthday, kyu2, true).sortValue,
             ageKyu1: getPreciseDuration(birthday, kyu1, true).text,
@@ -173,10 +182,7 @@ function processData(csvText) {
 
 function formatDateString(str) {
     if (str === null || str === undefined || str === '') return '-';
-    
-    // ⬇ エラー回避のため、必ず一度「文字列」に変換する処理を追加 ⬇
     let s = String(str); 
-    
     if (s === '-') return '-';
     if (s.includes('歳') || s.includes('年')) return s; 
     let parts = s.split('-');
@@ -194,7 +200,6 @@ function getSortValue(item, key) {
     
     let val = item[key];
     if (!val || val === '-') return 0;
-    
     if (key === 'number') return item.number;
     
     let date = new Date(val);
@@ -207,11 +212,20 @@ function renderTable() {
     const tbody = document.querySelector('#kishiTable tbody');
     const searchStr = document.getElementById('searchInput').value.toLowerCase();
     
+    // ▼▼ フィルター処理の更新 ▼▼
     let filteredData = kishiData.filter(k => {
-        if (!searchStr) return true;
-        return Object.values(k).some(val => 
-            String(val).toLowerCase().includes(searchStr)
-        );
+        // 1. タブによるステータス判定
+        let matchFilter = (currentFilter === 'all' || k.status === currentFilter);
+        
+        // 2. 検索文字列判定
+        let matchSearch = true;
+        if (searchStr) {
+            matchSearch = Object.values(k).some(val => 
+                String(val).toLowerCase().includes(searchStr)
+            );
+        }
+        
+        return matchFilter && matchSearch;
     });
 
     if (currentSort.colId && currentSort.key) {
@@ -242,12 +256,12 @@ function renderTable() {
     let k7 = document.getElementById('col7Select').value;
     let k8 = document.getElementById('col8Select').value;
 
-    // ⬇ (k, index) にして連番を取得できるようにする ⬇
     filteredData.forEach((k, index) => {
         let tr = document.createElement('tr');
         
         let nameDisplay = k.url ? `<a href="${k.url}" target="_blank" style="color: #cba135; font-weight: bold; text-decoration: none;">${k.name}</a>` : `<span style="font-weight: bold;">${k.name}</span>`;
 
+        // ▼▼ クラス（tablet-col, pc-col）を元通りに設定 ▼▼
         tr.innerHTML = `
             <td>${index + 1}</td>
             <td style="text-align: left;">${nameDisplay}</td>
