@@ -172,13 +172,18 @@ function processData(csvText) {
 }
 
 function formatDateString(str) {
-    if (!str || str.trim() === '' || str === '-') return '-';
-    if (str.includes('歳') || str.includes('年')) return str; 
-    let parts = str.split('-');
+    if (str === null || str === undefined || str === '') return '-';
+    
+    // ⬇ エラー回避のため、必ず一度「文字列」に変換する処理を追加 ⬇
+    let s = String(str); 
+    
+    if (s === '-') return '-';
+    if (s.includes('歳') || s.includes('年')) return s; 
+    let parts = s.split('-');
     if (parts.length === 3) {
-        return `${parts[0]}年${parseInt(parts[1])}月${parseInt(parts[2])}日`;
+        return `${parts[0]}年${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
     }
-    return str;
+    return s;
 }
 
 function getSortValue(item, key) {
@@ -237,16 +242,16 @@ function renderTable() {
     let k7 = document.getElementById('col7Select').value;
     let k8 = document.getElementById('col8Select').value;
 
-    filteredData.forEach(k => {
+    // ⬇ (k, index) にして連番を取得できるようにする ⬇
+    filteredData.forEach((k, index) => {
         let tr = document.createElement('tr');
         
         let nameDisplay = k.url ? `<a href="${k.url}" target="_blank" style="color: #cba135; font-weight: bold; text-decoration: none;">${k.name}</a>` : `<span style="font-weight: bold;">${k.name}</span>`;
 
         tr.innerHTML = `
-            <td>${k.number}</td>
-            <td style="text-align: left;">${nameDisplay}</td>
+            <td>${index + 1}</td> <td style="text-align: left;">${nameDisplay}</td>
             <td style="font-weight:bold; color:#1a3622;">${k.highestRank}</td>
-            <td>${formatDateString(k[k4]) || '-'}</td>
+            <td class="pc-col">${formatDateString(k[k4]) || '-'}</td>
             <td class="tablet-col">${formatDateString(k[k5]) || '-'}</td>
             <td class="tablet-col">${formatDateString(k[k6]) || '-'}</td>
             <td class="pc-col">${formatDateString(k[k7]) || '-'}</td>
