@@ -17,7 +17,7 @@ window.addEventListener('DOMContentLoaded', () => {
             tbody.innerHTML = `<tr><td colspan="8" class="empty-message">データの読み込みに失敗しました。</td></tr>`;
         });
 
-    // ▼▼ タブのイベントリスナー追加 ▼▼
+    // タブのイベントリスナー
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -108,7 +108,7 @@ function processData(csvText) {
         let passing = row[14] ? row[14].trim() : "";
         let url = row.length > 15 ? row[15].trim() : "";
 
-        // ▼▼ ステータス判定処理の追加 ▼▼
+        // ステータス判定
         let status = 'active';
         if (url === '') {
             status = 'withdrawn';
@@ -136,14 +136,15 @@ function processData(csvText) {
         else if (kyu2) { highestRank = "女流2級"; rankValue = 0.2; }
         else if (kyu3) { highestRank = "女流3級"; rankValue = 0.1; }
 
-        if (passing) { highestRank += " (没)"; rankValue -= 100; }
-        else if (retire) { highestRank += " (引退)"; rankValue -= 50; }
+        // ▼▼ ここを修正：「(没)」「(引退)」の文字追加を削除（ソート用の減算だけ残す） ▼▼
+        if (passing) { rankValue -= 100; }
+        else if (retire) { rankValue -= 50; }
 
         let kishi = {
             number: number,
             name: name,
             url: url,
-            status: status, // 追加
+            status: status,
             birthday: birthday,
             kyu3: kyu3, kyu2: kyu2, kyu1: kyu1,
             dan1: dan1, dan2: dan2, dan3: dan3, dan4: dan4, dan5: dan5, dan6: dan6, dan7: dan7,
@@ -154,7 +155,6 @@ function processData(csvText) {
             
             ageKyu3: getPreciseDuration(birthday, kyu3, true).text,
             ageKyu3Value: getPreciseDuration(birthday, kyu3, true).sortValue,
-            // ... (他のプロパティはそのまま維持)
             ageKyu2: getPreciseDuration(birthday, kyu2, true).text,
             ageKyu2Value: getPreciseDuration(birthday, kyu2, true).sortValue,
             ageKyu1: getPreciseDuration(birthday, kyu1, true).text,
@@ -212,12 +212,9 @@ function renderTable() {
     const tbody = document.querySelector('#kishiTable tbody');
     const searchStr = document.getElementById('searchInput').value.toLowerCase();
     
-    // ▼▼ フィルター処理の更新 ▼▼
     let filteredData = kishiData.filter(k => {
-        // 1. タブによるステータス判定
         let matchFilter = (currentFilter === 'all' || k.status === currentFilter);
         
-        // 2. 検索文字列判定
         let matchSearch = true;
         if (searchStr) {
             matchSearch = Object.values(k).some(val => 
@@ -261,7 +258,6 @@ function renderTable() {
         
         let nameDisplay = k.url ? `<a href="${k.url}" target="_blank" style="color: #cba135; font-weight: bold; text-decoration: none;">${k.name}</a>` : `<span style="font-weight: bold;">${k.name}</span>`;
 
-        // ▼▼ クラス（tablet-col, pc-col）を元通りに設定 ▼▼
         tr.innerHTML = `
             <td>${index + 1}</td>
             <td style="text-align: left;">${nameDisplay}</td>
