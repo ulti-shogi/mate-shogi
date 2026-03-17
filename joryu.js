@@ -106,9 +106,9 @@ function processData(csvText) {
         let number = parseInt(numStr, 10);
         let name = getColValue(row, headerMap, '女流棋士名');
         let birthday = getColValue(row, headerMap, '生年月日');
-        let kyu3 = getColValue(row, headerMap, '女流3級');
-        let kyu2 = getColValue(row, headerMap, '女流2級');
-        let kyu1 = getColValue(row, headerMap, '女流1級');
+        let kyu3 = getColValue(row, headerMap, '女流３級');
+        let kyu2 = getColValue(row, headerMap, '女流２級');
+        let kyu1 = getColValue(row, headerMap, '女流１級');
         let dan1 = getColValue(row, headerMap, '女流初段');
         let dan2 = getColValue(row, headerMap, '女流二段');
         let dan3 = getColValue(row, headerMap, '女流三段');
