@@ -46,6 +46,7 @@ function getPreciseDuration(startStr, endStr, isAge = true) {
 
     if (d < 0) {
         m--;
+        // 前月の月末の日付を取得して加算
         let prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
         d += prevMonth.getDate();
     }
@@ -54,7 +55,9 @@ function getPreciseDuration(startStr, endStr, isAge = true) {
         m += 12;
     }
 
-    let text = isAge ? `${y}歳${m}ヶ月` : `${y}年${m}ヶ月`;
+    // ▼▼ ここを修正：「日」まで表示するように変更 ▼▼
+    let text = isAge ? `${y}歳${m}ヶ月${d}日` : `${y}年${m}ヶ月${d}日`;
+    
     let sortValue = y * 12 + m + (d / 31);
 
     return { text, sortValue };
