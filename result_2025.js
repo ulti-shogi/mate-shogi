@@ -2,7 +2,8 @@ let gameData = [];
 let playerStats = {}; 
 let summaryArray = [];
 
-const sortState = { colId: 'score', asc: true };
+// ★修正3: 初期ソートは「序列（score）」の「降順（多い順）」
+const sortState = { colId: 'score', asc: false };
 
 window.addEventListener('DOMContentLoaded', () => {
     Promise.all([
@@ -46,7 +47,7 @@ function processCSV(gameText, kishiText) {
 
     function initPlayer(name) {
         if (!playerStats[name]) {
-            playerStats[name] = { wins: 0, losses: 0, total: 0, history: [] };
+            playerStats[name] = { games: 0, wins: 0, losses: 0, history: [] }; // ★修正2: totalをgamesに変更
         }
     }
 
@@ -54,15 +55,15 @@ function processCSV(gameText, kishiText) {
         const row = gameLines[i].split(',');
         if (row.length < 5) continue;
 
-        const date = row[gameHeaders['対局日']];
-        const match = row[gameHeaders['棋戦']];
-        const notes = row[gameHeaders['備考']];
-        const res1 = row[gameHeaders['先手の勝敗']];
+        const date = row[gameHeaders['対局日']]?.trim() || "";
+        const match = row[gameHeaders['棋戦']]?.trim() || "";
+        const notes = row[gameHeaders['備考']]?.trim() || "";
+        const res1 = row[gameHeaders['先手の勝敗']]?.trim() || "";
         const p1 = row[gameHeaders['先手']] ? row[gameHeaders['先手']].replace(/[\s　]/g, '').replace(/"/g, '') : "";
         const p2 = row[gameHeaders['後手']] ? row[gameHeaders['後手']].replace(/[\s　]/g, '').replace(/"/g, '') : "";
-        const res2 = row[gameHeaders['後手の勝敗']];
-        const thousand = row[gameHeaders['千日手']];
-        const broadcast = row[gameHeaders['放送日']];
+        const res2 = row[gameHeaders['後手の勝敗']]?.trim() || "";
+        const thousand = row[gameHeaders['千日手']]?.trim() || "";
+        const broadcast = row[gameHeaders['放送日']]?.trim() || "";
 
         const gameRecord = { date, match, notes, res1, p1, p2, res2, thousand, broadcast };
         gameData.push(gameRecord);
@@ -70,17 +71,16 @@ function processCSV(gameText, kishiText) {
         if (p1) initPlayer(p1);
         if (p2) initPlayer(p2);
 
-        // ★修正: 不戦勝（□）と不戦敗（■）も集計対象に含める
+        // 勝敗の判定を厳密に
         if (p1 && (res1 === '○' || res1 === '●' || res1 === '□' || res1 === '■')) {
-            playerStats[p1].total++;
+            playerStats[p1].games++;
             if (res1 === '○' || res1 === '□') playerStats[p1].wins++;
             if (res1 === '●' || res1 === '■') playerStats[p1].losses++;
             playerStats[p1].history.push({...gameRecord, mySente: true});
         }
         
-        // ★修正: 後手も同様
         if (p2 && (res2 === '○' || res2 === '●' || res2 === '□' || res2 === '■')) {
-            playerStats[p2].total++;
+            playerStats[p2].games++;
             if (res2 === '○' || res2 === '□') playerStats[p2].wins++;
             if (res2 === '●' || res2 === '■') playerStats[p2].losses++;
             playerStats[p2].history.push({...gameRecord, mySente: false});
@@ -89,12 +89,12 @@ function processCSV(gameText, kishiText) {
 
     summaryArray = Object.keys(playerStats).map(name => {
         const s = playerStats[name];
-        const winRate = s.total > 0 ? s.wins / s.total : 0;
+        const winRate = s.games > 0 ? s.wins / s.games : 0;
         const score = s.wins - s.losses;
         return {
             name: name,
             id: kishiMap[name] || 99999,
-            total: s.total,
+            games: s.games, // ★修正2: HTMLの data-col="games" と一致
             wins: s.wins,
             losses: s.losses,
             winRate: winRate,
@@ -162,12 +162,13 @@ function renderSummary() {
 
     summaryArray.forEach((item, index) => {
         const tr = document.createElement('tr');
-        const winRateStr = item.total > 0 ? (item.winRate).toFixed(3).replace(/^0\./, '.') : '.000';
+        const winRateStr = item.games > 0 ? (item.winRate).toFixed(3).replace(/^0\./, '.') : '.000';
 
+        // ★修正1: 余計な pc-col クラスを削除。これでタブレットでも列がズレない。
         tr.innerHTML = `
-            <td class="pc-col">${index + 1}</td>
+            <td>${index + 1}</td>
             <td style="text-align: left; font-weight: bold;">${item.name}</td>
-            <td>${item.total}</td>
+            <td>${item.games}</td>
             <td>${item.wins}</td>
             <td>${item.losses}</td>
             <td>${winRateStr}</td>
@@ -210,8 +211,8 @@ function renderHistory(playerName) {
     }
 
     const stats = playerStats[playerName];
-    const winRateStr = stats.total > 0 ? (stats.wins / stats.total).toFixed(3).replace(/^0\./, '.') : '.000';
-    statsCard.innerHTML = `${playerName} の成績： ${stats.total}戦 ${stats.wins}勝 ${stats.losses}敗 （勝率 ${winRateStr}）`;
+    const winRateStr = stats.games > 0 ? (stats.wins / stats.games).toFixed(3).replace(/^0\./, '.') : '.000';
+    statsCard.innerHTML = `${playerName} の成績： ${stats.games}戦 ${stats.wins}勝 ${stats.losses}敗 （勝率 ${winRateStr}）`;
     statsCard.style.display = 'block';
 
     const history = stats.history;
@@ -225,7 +226,6 @@ function renderHistory(playerName) {
         const myResult = isSente ? game.res1 : game.res2;
         const senteGote = isSente ? '先手' : '後手';
 
-        // ★修正: □（不戦勝）の場合も色を金色にする
         const resultStyle = (myResult === '○' || myResult === '□') ? 'color: #cba135; font-weight: bold;' : '';
 
         tr.innerHTML = `
