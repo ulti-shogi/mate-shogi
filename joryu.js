@@ -75,7 +75,7 @@ function processData(csvText) {
         let passing = getColValue(row, headerMap, '逝去日');
         let url = getColValue(row, headerMap, 'データベース');
 
-        // ステータス判定 (URLありの中井広恵さんは退会にならず現役等に入ります)
+        // ステータス判定
         let status = 'active';
         if (passing !== '') status = 'deceased';
         else if (retire !== '') status = 'retired';
@@ -100,7 +100,7 @@ function processData(csvText) {
 
         kishiData.push({
             number: number,
-            sortNumber: affWeight + number, // これをソートに使用
+            sortNumber: affWeight + number,
             name: name,
             affiliation: affiliation,
             status: status,
@@ -149,13 +149,25 @@ function formatDateString(str) {
     return s;
 }
 
+// 追加：セルの表示内容を決定する補助関数（番号の時だけバッジをつける）
+function getCellContent(kishi, key) {
+    if (key === 'number') {
+        let badgeColor = kishi.affiliation === 'LPSA' ? '#e91e63' : (kishi.affiliation === 'フリー' ? '#607d8b' : '#1a3622');
+        let badgeHTML = `<span style="font-size: 10px; background: ${badgeColor}; color: white; padding: 2px 4px; border-radius: 4px; margin-left: 5px;">${kishi.affiliation}</span>`;
+        // 中井広恵さんのように番号が0（フリー等）の場合は番号を出さずにバッジだけ出すなどの調整も可能
+        let numText = kishi.number === 0 ? '-' : kishi.number;
+        return `${numText}${badgeHTML}`;
+    }
+    return formatDateString(kishi[key]) || '-';
+}
+
 function renderTable() {
     const tbody = document.querySelector('#kishiTable tbody');
     const searchStr = document.getElementById('searchInput').value.toLowerCase();
     
     let filtered = kishiData.filter(k => {
         let matchFilter = (currentFilter === 'all' || k.status === currentFilter);
-        let matchSearch = k.name.includes(searchStr) || k.highestRank.includes(searchStr);
+        let matchSearch = k.name.includes(searchStr) || k.highestRank.includes(searchStr) || (k.affiliation.toLowerCase().includes(searchStr));
         return matchFilter && matchSearch;
     });
 
@@ -163,7 +175,7 @@ function renderTable() {
         filtered.sort((a, b) => {
             let valA, valB;
             if (currentSort.key === 'number') {
-                valA = a.sortNumber; valB = b.sortNumber; // JSA→LPSA→フリーで並ぶ魔法の数字
+                valA = a.sortNumber; valB = b.sortNumber;
             } else if (currentSort.key === 'highestRank') {
                 valA = a.rankWeight; valB = b.rankWeight;
             } else if (currentSort.key === 'ageText') {
@@ -197,24 +209,18 @@ function renderTable() {
     filtered.forEach((k, index) => {
         let tr = document.createElement('tr');
         
-        // JSA、LPSA、フリーでバッジの色を変える
-        let badgeColor = k.affiliation === 'LPSA' ? '#e91e63' : (k.affiliation === 'フリー' ? '#607d8b' : '#1a3622');
-        let nameDisplay = `
-            <div style="text-align: left;">
-                <span style="font-size: 10px; background: ${badgeColor}; color: white; padding: 2px 4px; border-radius: 4px; margin-right: 5px; vertical-align: middle;">${k.affiliation}</span>
-                ${k.url ? `<a href="${k.url}" target="_blank" style="color: #cba135; font-weight: bold; text-decoration: none; vertical-align: middle;">${k.name}</a>` : `<span style="font-weight: bold; vertical-align: middle;">${k.name}</span>`}
-            </div>
-        `;
+        // 名前列はシンプルに（バッジなし）
+        let nameDisplay = k.url ? `<a href="${k.url}" target="_blank" style="color: #cba135; font-weight: bold; text-decoration: none;">${k.name}</a>` : `<span style="font-weight: bold;">${k.name}</span>`;
 
         tr.innerHTML = `
             <td>${index + 1}</td>
-            <td>${nameDisplay}</td>
+            <td style="text-align: left;">${nameDisplay}</td>
             <td style="font-weight:bold; color:#1a3622;">${k.highestRank}</td>
-            <td>${formatDateString(k[colKeys[0]]) || '-'}</td>
-            <td class="tablet-col">${formatDateString(k[colKeys[1]]) || '-'}</td>
-            <td class="tablet-col">${formatDateString(k[colKeys[2]]) || '-'}</td>
-            <td class="pc-col">${formatDateString(k[colKeys[3]]) || '-'}</td>
-            <td class="pc-col">${formatDateString(k[colKeys[4]]) || '-'}</td>
+            <td>${getCellContent(k, colKeys[0])}</td>
+            <td class="tablet-col">${getCellContent(k, colKeys[1])}</td>
+            <td class="tablet-col">${getCellContent(k, colKeys[2])}</td>
+            <td class="pc-col">${getCellContent(k, colKeys[3])}</td>
+            <td class="pc-col">${getCellContent(k, colKeys[4])}</td>
         `;
         tbody.appendChild(tr);
     });
