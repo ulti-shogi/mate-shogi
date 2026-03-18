@@ -70,17 +70,19 @@ function processCSV(gameText, kishiText) {
         if (p1) initPlayer(p1);
         if (p2) initPlayer(p2);
 
-        if (p1 && (res1 === '○' || res1 === '●')) {
+        // ★修正: 不戦勝（□）と不戦敗（■）も集計対象に含める
+        if (p1 && (res1 === '○' || res1 === '●' || res1 === '□' || res1 === '■')) {
             playerStats[p1].total++;
-            if (res1 === '○') playerStats[p1].wins++;
-            if (res1 === '●') playerStats[p1].losses++;
+            if (res1 === '○' || res1 === '□') playerStats[p1].wins++;
+            if (res1 === '●' || res1 === '■') playerStats[p1].losses++;
             playerStats[p1].history.push({...gameRecord, mySente: true});
         }
         
-        if (p2 && (res2 === '○' || res2 === '●')) {
+        // ★修正: 後手も同様
+        if (p2 && (res2 === '○' || res2 === '●' || res2 === '□' || res2 === '■')) {
             playerStats[p2].total++;
-            if (res2 === '○') playerStats[p2].wins++;
-            if (res2 === '●') playerStats[p2].losses++;
+            if (res2 === '○' || res2 === '□') playerStats[p2].wins++;
+            if (res2 === '●' || res2 === '■') playerStats[p2].losses++;
             playerStats[p2].history.push({...gameRecord, mySente: false});
         }
     }
@@ -196,26 +198,23 @@ function populatePlayerSelect() {
 
 function renderHistory(playerName) {
     const tbody = document.querySelector('#historyTable tbody');
-    const statsCard = document.getElementById('playerStatsCard'); // HTMLにある成績表示用の枠を取得
+    const statsCard = document.getElementById('playerStatsCard'); 
     
     if (!tbody || !statsCard) return;
     tbody.innerHTML = '';
 
-    // 棋士が未選択（またはデータなし）の場合はテーブルを空にし、カードを隠す
     if (!playerName || !playerStats[playerName]) {
         statsCard.style.display = 'none';
         tbody.innerHTML = '<tr><td colspan="6" class="empty-message">棋士を選択してください</td></tr>';
         return;
     }
 
-    // ★追加: 選択した棋士の成績（対局数・勝・敗・勝率）をカードに表示
     const stats = playerStats[playerName];
     const winRateStr = stats.total > 0 ? (stats.wins / stats.total).toFixed(3).replace(/^0\./, '.') : '.000';
     statsCard.innerHTML = `${playerName} の成績： ${stats.total}戦 ${stats.wins}勝 ${stats.losses}敗 （勝率 ${winRateStr}）`;
     statsCard.style.display = 'block';
 
     const history = stats.history;
-    // 日付の降順（新しい順）にソート
     history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     history.forEach((game) => {
@@ -226,7 +225,8 @@ function renderHistory(playerName) {
         const myResult = isSente ? game.res1 : game.res2;
         const senteGote = isSente ? '先手' : '後手';
 
-        const resultStyle = myResult === '○' ? 'color: #cba135; font-weight: bold;' : '';
+        // ★修正: □（不戦勝）の場合も色を金色にする
+        const resultStyle = (myResult === '○' || myResult === '□') ? 'color: #cba135; font-weight: bold;' : '';
 
         tr.innerHTML = `
             <td>${game.date || ''}</td>
