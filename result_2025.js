@@ -169,17 +169,38 @@ function setupUI() {
 
 function renderSummaryTable() {
     let viewData = [...summaryArray];
+
     viewData.sort((a, b) => {
         let valA, valB;
         if (sortState.colId === 'games') { valA = a.totalGames; valB = b.totalGames; }
         else if (sortState.colId === 'wins') { valA = a.wins; valB = b.wins; }
         else if (sortState.colId === 'losses') { valA = a.losses; valB = b.losses; }
         else if (sortState.colId === 'winRate') { valA = a.winRate; valB = b.winRate; }
-        else { valA = a.score; valB = b.score; }
+        else { valA = a.score; valB = b.score; } // 序列
         
         let cmp = valA - valB;
-        if (cmp === 0) cmp = a.score - b.score;
-        return sortState.asc ? cmp : -cmp;
+        
+        // 1. メインの比較で差がついた場合は、画面で指定されている昇順・降順に従う
+        if (cmp !== 0) {
+            return sortState.asc ? cmp : -cmp;
+        }
+
+        // 2. --- ここから同数・同率の場合のタイブレーク処理 ---
+        
+        if (sortState.colId === 'games') {
+            // 対局数が同じ場合は、勝数が多い順（降順）
+            let winCmp = b.wins - a.wins;
+            if (winCmp !== 0) return winCmp;
+        } 
+        else if (sortState.colId === 'wins' || sortState.colId === 'losses' || sortState.colId === 'winRate') {
+            // 勝数・負数・勝率が同じ場合は、対局数が多い順（降順）
+            let gameCmp = b.totalGames - a.totalGames;
+            if (gameCmp !== 0) return gameCmp;
+        }
+        
+        // 3. 以上の条件でも全く同じ場合（または最初から序列ソートの場合）は、
+        // 昇順・降順の指定に関わらず、必ず「序列が高い（スコアが小さい）順」を優先する
+        return a.score - b.score;
     });
 
     const tbody = document.querySelector('#summaryTable tbody');
