@@ -75,11 +75,11 @@ function processData(csvText) {
         let passing = getColValue(row, headerMap, '逝去日');
         let url = getColValue(row, headerMap, 'データベース');
 
-        // ステータス判定
+        // ⬇⬇ ステータス判定（順番を修正！） ⬇⬇
         let status = 'active';
-        if (passing !== '') status = 'deceased';
-        else if (retire !== '') status = 'retired';
-        else if (url === '') status = 'withdrawn';
+        if (url === '') status = 'withdrawn';           // 最優先：URL空欄は退会
+        else if (passing !== '') status = 'deceased';   // 次点：逝去日があれば物故
+        else if (retire !== '') status = 'retired';     // それ以外で引退日があれば引退
 
         let proStartDate = kyu3 || kyu2 || kyu1 || dan1 || dan2 || dan3 || dan4 || dan5 || dan6 || dan7;
         let currentAgeData = (birthday && passing) ? getPreciseDuration(birthday, passing, true) : (birthday ? getPreciseDuration(birthday, todayStr, true) : {text:"-", sortValue:0});
@@ -149,12 +149,11 @@ function formatDateString(str) {
     return s;
 }
 
-// 追加：セルの表示内容を決定する補助関数（番号の時だけバッジをつける）
+// セルの表示内容を決定する補助関数（番号の時だけバッジをつける）
 function getCellContent(kishi, key) {
     if (key === 'number') {
         let badgeColor = kishi.affiliation === 'LPSA' ? '#e91e63' : (kishi.affiliation === 'フリー' ? '#607d8b' : '#1a3622');
         let badgeHTML = `<span style="font-size: 10px; background: ${badgeColor}; color: white; padding: 2px 4px; border-radius: 4px; margin-left: 5px;">${kishi.affiliation}</span>`;
-        // 中井広恵さんのように番号が0（フリー等）の場合は番号を出さずにバッジだけ出すなどの調整も可能
         let numText = kishi.number === 0 ? '-' : kishi.number;
         return `${numText}${badgeHTML}`;
     }
