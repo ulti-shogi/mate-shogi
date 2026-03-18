@@ -2,11 +2,9 @@ let gameData = [];
 let playerStats = {}; 
 let summaryArray = [];
 
-// ソート状態の管理
 const sortState = { colId: 'score', asc: true };
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 読み込むファイル名を「result_2025.csv」に統一
     Promise.all([
         fetch('result_2025.csv').then(res => { if(!res.ok) throw new Error('result_2025.csvの読み込みに失敗'); return res.text(); }),
         fetch('kishi.csv').then(res => { if(!res.ok) throw new Error('kishi.csvの読み込みに失敗'); return res.text(); })
@@ -18,15 +16,10 @@ window.addEventListener('DOMContentLoaded', () => {
     .catch(error => console.error('エラー:', error));
 });
 
-/**
- * 💡【新機能】1行目のヘッダーから「列名とインデックスの対応表」を作る関数
- * 例: {"棋士番号": 0, "棋士名": 1, ...}
- */
 function createHeaderMap(headerLine) {
     const headers = headerLine.replace(/\r/g, '').split(',');
     const map = {};
     headers.forEach((h, i) => {
-        // BOM（不可視の文字化け原因）や前後の空白を除去して安全にする
         const cleanH = h.replace(/^\uFEFF/, '').trim();
         map[cleanH] = i;
     });
@@ -34,38 +27,23 @@ function createHeaderMap(headerLine) {
 }
 
 function processCSV(gameText, kishiText) {
-    // ==========================================
-    // 1. kishi.csv の処理（辞書の作成）
-    // ==========================================
     const kishiLines = kishiText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
-    
-    // ヘッダーマップを作成
     const kishiHeaders = createHeaderMap(kishiLines[0]);
-    
     const kishiMap = {};
     for (let i = 1; i < kishiLines.length; i++) {
         const row = kishiLines[i].split(',');
-        
-        // 列名を使って値を取得
         const idStr = row[kishiHeaders['棋士番号']];
         const nameStr = row[kishiHeaders['棋士名']];
-        
         if (idStr && nameStr) {
             const id = parseInt(idStr, 10);
-            const name = nameStr.replace(/[\s　]/g, '').replace(/"/g, ''); // 空白と引用符を除去
+            const name = nameStr.replace(/[\s　]/g, '').replace(/"/g, '');
             kishiMap[name] = id;
         }
     }
 
-    // ==========================================
-    // 2. result_2025.csv の処理（勝敗の集計）
-    // ==========================================
     const gameLines = gameText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
-    
-    // ヘッダーマップを作成
     const gameHeaders = createHeaderMap(gameLines[0]);
 
-    // 棋士の成績データを初期化する補助関数
     function initPlayer(name) {
         if (!playerStats[name]) {
             playerStats[name] = { wins: 0, losses: 0, total: 0, history: [] };
@@ -74,9 +52,8 @@ function processCSV(gameText, kishiText) {
 
     for (let i = 1; i < gameLines.length; i++) {
         const row = gameLines[i].split(',');
-        if (row.length < 5) continue; // 空行や不完全な行をスキップ
+        if (row.length < 5) continue;
 
-        // 💡 ここがポイント！数字のインデックスではなく、日本語の列名でデータを取得する
         const date = row[gameHeaders['対局日']];
         const match = row[gameHeaders['棋戦']];
         const notes = row[gameHeaders['備考']];
@@ -90,11 +67,9 @@ function processCSV(gameText, kishiText) {
         const gameRecord = { date, match, notes, res1, p1, p2, res2, thousand, broadcast };
         gameData.push(gameRecord);
 
-        // --- 成績の集計 ---
         if (p1) initPlayer(p1);
         if (p2) initPlayer(p2);
 
-        // 先手の集計（「○」か「●」の場合のみ集計し、持将棋などのバグを防ぐ）
         if (p1 && (res1 === '○' || res1 === '●')) {
             playerStats[p1].total++;
             if (res1 === '○') playerStats[p1].wins++;
@@ -102,7 +77,6 @@ function processCSV(gameText, kishiText) {
             playerStats[p1].history.push({...gameRecord, mySente: true});
         }
         
-        // 後手の集計
         if (p2 && (res2 === '○' || res2 === '●')) {
             playerStats[p2].total++;
             if (res2 === '○') playerStats[p2].wins++;
@@ -111,16 +85,13 @@ function processCSV(gameText, kishiText) {
         }
     }
 
-    // ==========================================
-    // 3. 画面表示用配列 (summaryArray) の生成
-    // ==========================================
     summaryArray = Object.keys(playerStats).map(name => {
         const s = playerStats[name];
         const winRate = s.total > 0 ? s.wins / s.total : 0;
-        const score = s.wins - s.losses; // 勝越し数
+        const score = s.wins - s.losses;
         return {
             name: name,
-            id: kishiMap[name] || 99999, // kishi.csvに名前がない場合は一番下に配置
+            id: kishiMap[name] || 99999,
             total: s.total,
             wins: s.wins,
             losses: s.losses,
@@ -130,13 +101,10 @@ function processCSV(gameText, kishiText) {
     });
 }
 
-// ==========================================
-// これ以降は既存の UI（表の描画・ソート等）のコード
-// ==========================================
 function setupUI() {
     renderSummary();
-    
-    // 見出しクリックでのソート設定
+    populatePlayerSelect(); 
+
     document.querySelectorAll('#summaryTable th.sortable').forEach(th => {
         th.addEventListener('click', () => {
             const col = th.dataset.col;
@@ -144,7 +112,7 @@ function setupUI() {
                 sortState.asc = !sortState.asc;
             } else {
                 sortState.colId = col;
-                sortState.asc = false; // 初期クリックは降順（勝数などが多い順）
+                sortState.asc = false;
                 if (col === 'id' || col === 'name') sortState.asc = true;
             }
             updateSortIcons();
@@ -152,7 +120,6 @@ function setupUI() {
         });
     });
 
-    // タブ切り替えの設定
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -174,12 +141,10 @@ function updateSortIcons() {
 }
 
 function renderSummary() {
-    // データの並び替え（ソート）
     summaryArray.sort((a, b) => {
         const valA = a[sortState.colId];
         const valB = b[sortState.colId];
         if (valA === valB) {
-            // 値が同じ場合は勝数または名前でサブソート
             return b.wins - a.wins || a.name.localeCompare(b.name, 'ja');
         }
         if (typeof valA === 'string') {
@@ -189,14 +154,12 @@ function renderSummary() {
     });
 
     const tbody = document.querySelector('#summaryTable tbody');
-    if (!tbody) return; // tbodyが存在しない場合はスキップ
+    if (!tbody) return;
     
     tbody.innerHTML = '';
 
     summaryArray.forEach((item, index) => {
         const tr = document.createElement('tr');
-        
-        // 勝率の計算（割り切れない場合は小数第4位を四捨五入）
         const winRateStr = item.total > 0 ? (item.winRate).toFixed(3).replace(/^0\./, '.') : '.000';
 
         tr.innerHTML = `
@@ -206,6 +169,72 @@ function renderSummary() {
             <td>${item.wins}</td>
             <td>${item.losses}</td>
             <td>${winRateStr}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function populatePlayerSelect() {
+    const select = document.getElementById('playerSelect'); 
+    if (!select) return;
+
+    select.innerHTML = '<option value="">棋士を選択してください</option>';
+
+    const sortedNames = Object.keys(playerStats).sort((a, b) => a.localeCompare(b, 'ja'));
+
+    sortedNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+
+    select.addEventListener('change', (e) => {
+        renderHistory(e.target.value);
+    });
+}
+
+function renderHistory(playerName) {
+    const tbody = document.querySelector('#historyTable tbody');
+    const statsCard = document.getElementById('playerStatsCard'); // HTMLにある成績表示用の枠を取得
+    
+    if (!tbody || !statsCard) return;
+    tbody.innerHTML = '';
+
+    // 棋士が未選択（またはデータなし）の場合はテーブルを空にし、カードを隠す
+    if (!playerName || !playerStats[playerName]) {
+        statsCard.style.display = 'none';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-message">棋士を選択してください</td></tr>';
+        return;
+    }
+
+    // ★追加: 選択した棋士の成績（対局数・勝・敗・勝率）をカードに表示
+    const stats = playerStats[playerName];
+    const winRateStr = stats.total > 0 ? (stats.wins / stats.total).toFixed(3).replace(/^0\./, '.') : '.000';
+    statsCard.innerHTML = `${playerName} の成績： ${stats.total}戦 ${stats.wins}勝 ${stats.losses}敗 （勝率 ${winRateStr}）`;
+    statsCard.style.display = 'block';
+
+    const history = stats.history;
+    // 日付の降順（新しい順）にソート
+    history.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    history.forEach((game) => {
+        const tr = document.createElement('tr');
+
+        const isSente = game.mySente;
+        const opponent = isSente ? game.p2 : game.p1;
+        const myResult = isSente ? game.res1 : game.res2;
+        const senteGote = isSente ? '先手' : '後手';
+
+        const resultStyle = myResult === '○' ? 'color: #cba135; font-weight: bold;' : '';
+
+        tr.innerHTML = `
+            <td>${game.date || ''}</td>
+            <td>${game.match || ''}</td>
+            <td>${senteGote}</td>
+            <td>${opponent || ''}</td>
+            <td style="${resultStyle}">${myResult || ''}</td>
+            <td>${game.notes || ''}</td>
         `;
         tbody.appendChild(tr);
     });
