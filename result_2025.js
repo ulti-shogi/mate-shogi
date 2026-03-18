@@ -123,7 +123,9 @@ function processCSV(gameText, kishiText) {
         }
     }
 
-    summaryArray = Object.values(playerStats).map(p => {
+    summaryArray = Object.values(playerStats)
+        .filter(p => p.score < 99999) // ★追加: 棋士名簿にいない人物（スコア99999）を表から完全に除外
+        .map(p => {
         let total = p.wins + p.losses;
         let rate = total > 0 ? (p.wins / total) : 0;
         let rateStr = total > 0 ? rate.toFixed(4) : "-";
