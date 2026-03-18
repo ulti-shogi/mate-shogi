@@ -3,19 +3,15 @@ let currentSort = { colId: null, key: null, asc: true };
 let currentFilter = 'all';
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 参照元を joryu.csv に変更
     fetch('joryu.csv')
         .then(response => {
             if (!response.ok) throw new Error('CSVの読み込みに失敗しました');
             return response.text();
         })
-        .then(csvText => {
-            processData(csvText);
-        })
+        .then(csvText => processData(csvText))
         .catch(error => {
             console.error('エラー:', error);
-            const tbody = document.querySelector('#kishiTable tbody');
-            tbody.innerHTML = `<tr><td colspan="8" class="empty-message">データの読み込みに失敗しました。</td></tr>`;
+            document.querySelector('#kishiTable tbody').innerHTML = `<tr><td colspan="8" class="empty-message">データの読み込みに失敗しました。</td></tr>`;
         });
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -28,61 +24,19 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// 日数を含めた正確な期間計算
 function getPreciseDuration(startStr, endStr, isAge = true) {
-    if (!startStr || startStr.trim() === '' || !endStr || endStr.trim() === '') {
-        return { text: "-", sortValue: 0 };
-    }
-    
+    if (!startStr || startStr.trim() === '' || !endStr || endStr.trim() === '') return { text: "-", sortValue: 0 };
     let start = new Date(startStr);
     let end = new Date(endStr);
-
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
-        return { text: "-", sortValue: 0 };
-    }
-
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return { text: "-", sortValue: 0 };
     let y = end.getFullYear() - start.getFullYear();
     let m = end.getMonth() - start.getMonth();
     let d = end.getDate() - start.getDate();
-
-    if (d < 0) {
-        m--;
-        let prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
-        d += prevMonth.getDate();
-    }
-    if (m < 0) {
-        y--;
-        m += 12;
-    }
-
-    let text = isAge ? `${y}歳${m}ヶ月${d}日` : `${y}年${m}ヶ月${d}日`;
-    let sortValue = y * 12 + m + (d / 31);
-
-    return { text, sortValue };
+    if (d < 0) { m--; let prevMonth = new Date(end.getFullYear(), end.getMonth(), 0); d += prevMonth.getDate(); }
+    if (m < 0) { y--; m += 12; }
+    return { text: isAge ? `${y}歳${m}ヶ月${d}日` : `${y}年${m}ヶ月${d}日`, sortValue: y * 12 + m + (d / 31) };
 }
 
-function calculateCurrentAge(birthStr, retireStr, passStr) {
-    if (!birthStr || birthStr.trim() === '') return { text: "-", sortValue: 0 };
-    if (passStr && passStr.trim() !== '') {
-        let result = getPreciseDuration(birthStr, passStr, true);
-        return { text: `${result.text} (没)`, sortValue: result.sortValue };
-    }
-    let today = new Date();
-    let todayStr = today.toISOString().split('T')[0];
-    return getPreciseDuration(birthStr, todayStr, true);
-}
-
-function calculateActivePeriod(startStr, retireStr, passStr) {
-    if (!startStr || startStr.trim() === '') return { text: "-", sortValue: 0 };
-    
-    let endStr = new Date().toISOString().split('T')[0];
-    if (retireStr && retireStr.trim() !== '') endStr = retireStr;
-    if (passStr && passStr.trim() !== '') endStr = passStr;
-
-    return getPreciseDuration(startStr, endStr, false);
-}
-
-// ヘッダーマップから安全にデータを取得する補助関数
 function getColValue(row, headerMap, colName) {
     const idx = headerMap[colName];
     return (idx !== undefined && row[idx]) ? row[idx].trim() : "";
@@ -92,19 +46,20 @@ function processData(csvText) {
     const lines = csvText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     if (lines.length < 2) return;
 
-    // 1行目からヘッダーの列名とインデックス番号をマッピング（列名基準）
     const headers = lines[0].split(',').map(h => h.trim());
     const headerMap = {};
     headers.forEach((h, i) => { headerMap[h] = i; });
-    
+
+    kishiData = [];
+    const todayStr = new Date().toISOString().split('T')[0];
+
     for (let i = 1; i < lines.length; i++) {
         let row = lines[i].split(',');
-
-        let numStr = getColValue(row, headerMap, '女流棋士番号');
-        if (!numStr) continue;
-        
-        let number = parseInt(numStr, 10);
         let name = getColValue(row, headerMap, '女流棋士名');
+        if (!name) continue;
+
+        let affiliation = getColValue(row, headerMap, '所属') || 'JSA'; // 所属が空ならJSA
+        let number = parseInt(getColValue(row, headerMap, '女流棋士番号'), 10) || 0;
         let birthday = getColValue(row, headerMap, '生年月日');
         let kyu3 = getColValue(row, headerMap, '女流３級');
         let kyu2 = getColValue(row, headerMap, '女流２級');
@@ -117,54 +72,46 @@ function processData(csvText) {
         let dan6 = getColValue(row, headerMap, '女流六段');
         let dan7 = getColValue(row, headerMap, '女流七段');
         let retire = getColValue(row, headerMap, '引退日');
-        let passing = getColValue(row, headerMap, '逝去日'); // 名称変更対応
-        let url = getColValue(row, headerMap, 'データベース'); // 名称変更対応
+        let passing = getColValue(row, headerMap, '逝去日');
+        let url = getColValue(row, headerMap, 'データベース');
 
-        // ステータス判定
+        // ステータス判定 (URLありの中井広恵さんは退会にならず現役等に入ります)
         let status = 'active';
-        if (url === '') {
-            status = 'withdrawn';
-        } else if (passing !== '') {
-            status = 'deceased';
-        } else if (retire !== '') {
-            status = 'retired';
-        }
+        if (passing !== '') status = 'deceased';
+        else if (retire !== '') status = 'retired';
+        else if (url === '') status = 'withdrawn';
 
-        // プロ入り日判定の範囲を女流七段まで拡張
         let proStartDate = kyu3 || kyu2 || kyu1 || dan1 || dan2 || dan3 || dan4 || dan5 || dan6 || dan7;
+        let currentAgeData = (birthday && passing) ? getPreciseDuration(birthday, passing, true) : (birthday ? getPreciseDuration(birthday, todayStr, true) : {text:"-", sortValue:0});
+        let activePeriodData = getPreciseDuration(proStartDate, retire || passing || todayStr, false);
 
-        let currentAgeData = calculateCurrentAge(birthday, retire, passing);
-        let activePeriodData = calculateActivePeriod(proStartDate, retire, passing);
+        // 最高段位判定
+        const ranks = ["女流七段", "女流六段", "女流五段", "女流四段", "女流三段", "女流二段", "女流初段", "女流１級", "女流２級", "女流３級"];
+        const rankFields = [dan7, dan6, dan5, dan4, dan3, dan2, dan1, kyu1, kyu2, kyu3];
+        let highestRank = "-";
+        let rankWeight = 0;
+        for (let j = 0; j < rankFields.length; j++) {
+            if (rankFields[j]) { highestRank = ranks[j]; rankWeight = 10 - j; break; }
+        }
+        if (passing) rankWeight -= 100; else if (retire) rankWeight -= 50;
 
-        let highestRank = "";
-        let rankValue = 0;
-        if (dan7) { highestRank = "女流七段"; rankValue = 7; }
-        else if (dan6) { highestRank = "女流六段"; rankValue = 6; }
-        else if (dan5) { highestRank = "女流五段"; rankValue = 5; }
-        else if (dan4) { highestRank = "女流四段"; rankValue = 4; }
-        else if (dan3) { highestRank = "女流三段"; rankValue = 3; }
-        else if (dan2) { highestRank = "女流二段"; rankValue = 2; }
-        else if (dan1) { highestRank = "女流初段"; rankValue = 1; }
-        else if (kyu1) { highestRank = "女流1級"; rankValue = 0.5; }
-        else if (kyu2) { highestRank = "女流2級"; rankValue = 0.2; }
-        else if (kyu3) { highestRank = "女流3級"; rankValue = 0.1; }
+        // 【番号ソート用の重み付け】 JSA(1000) < LPSA(2000) < フリー(3000)
+        let affWeight = affiliation === 'JSA' ? 1000 : (affiliation === 'LPSA' ? 2000 : 3000);
 
-        if (passing) { rankValue -= 100; }
-        else if (retire) { rankValue -= 50; }
-
-        let kishi = {
+        kishiData.push({
             number: number,
+            sortNumber: affWeight + number, // これをソートに使用
             name: name,
-            url: url,
+            affiliation: affiliation,
             status: status,
+            url: url,
+            highestRank: highestRank,
+            rankWeight: rankWeight,
             birthday: birthday,
-            kyu3: kyu3, kyu2: kyu2, kyu1: kyu1,
-            dan1: dan1, dan2: dan2, dan3: dan3, dan4: dan4, dan5: dan5, dan6: dan6, dan7: dan7,
+            kyu3: kyu3, kyu2: kyu2, kyu1: kyu1, dan1: dan1, dan2: dan2, dan3: dan3, dan4: dan4, dan5: dan5, dan6: dan6, dan7: dan7,
             retire: retire, passing: passing,
-            highestRank: highestRank, rankValue: rankValue,
             ageText: currentAgeData.text, ageValue: currentAgeData.sortValue,
             activePeriod: activePeriodData.text, activePeriodValue: activePeriodData.sortValue,
-            
             ageKyu3: getPreciseDuration(birthday, kyu3, true).text,
             ageKyu3Value: getPreciseDuration(birthday, kyu3, true).sortValue,
             ageKyu2: getPreciseDuration(birthday, kyu2, true).text,
@@ -185,10 +132,8 @@ function processData(csvText) {
             ageDan6Value: getPreciseDuration(birthday, dan6, true).sortValue,
             ageDan7: getPreciseDuration(birthday, dan7, true).text,
             ageDan7Value: getPreciseDuration(birthday, dan7, true).sortValue
-        };
-        kishiData.push(kishi);
+        });
     }
-
     renderTable();
 }
 
@@ -204,81 +149,72 @@ function formatDateString(str) {
     return s;
 }
 
-function getSortValue(item, key) {
-    if (key === 'ageText') return item.ageValue;
-    if (key === 'activePeriod') return item.activePeriodValue;
-    if (key === 'highestRank') return item.rankValue;
-    if (key.startsWith('age') && key !== 'ageText') return item[key + 'Value'];
-    
-    let val = item[key];
-    if (!val || val === '-') return 0;
-    if (key === 'number') return item.number;
-    
-    let date = new Date(val);
-    if (!isNaN(date.getTime())) return date.getTime();
-
-    return String(val);
-}
-
 function renderTable() {
     const tbody = document.querySelector('#kishiTable tbody');
     const searchStr = document.getElementById('searchInput').value.toLowerCase();
     
-    let filteredData = kishiData.filter(k => {
+    let filtered = kishiData.filter(k => {
         let matchFilter = (currentFilter === 'all' || k.status === currentFilter);
-        
-        let matchSearch = true;
-        if (searchStr) {
-            matchSearch = Object.values(k).some(val => 
-                String(val).toLowerCase().includes(searchStr)
-            );
-        }
-        
+        let matchSearch = k.name.includes(searchStr) || k.highestRank.includes(searchStr);
         return matchFilter && matchSearch;
     });
 
-    if (currentSort.colId && currentSort.key) {
-        filteredData.sort((a, b) => {
-            let valA = getSortValue(a, currentSort.key);
-            let valB = getSortValue(b, currentSort.key);
+    if (currentSort.key) {
+        filtered.sort((a, b) => {
+            let valA, valB;
+            if (currentSort.key === 'number') {
+                valA = a.sortNumber; valB = b.sortNumber; // JSA→LPSA→フリーで並ぶ魔法の数字
+            } else if (currentSort.key === 'highestRank') {
+                valA = a.rankWeight; valB = b.rankWeight;
+            } else if (currentSort.key === 'ageText') {
+                valA = a.ageValue; valB = b.ageValue;
+            } else if (currentSort.key === 'activePeriod') {
+                valA = a.activePeriodValue; valB = b.activePeriodValue;
+            } else if (currentSort.key.startsWith('age') && currentSort.key !== 'ageText') {
+                valA = a[currentSort.key + 'Value']; valB = b[currentSort.key + 'Value'];
+            } else {
+                let vA = a[currentSort.key]; let vB = b[currentSort.key];
+                if (!vA || vA === '-') valA = 0; else { let d = new Date(vA); valA = isNaN(d) ? vA : d.getTime(); }
+                if (!vB || vB === '-') valB = 0; else { let d = new Date(vB); valB = isNaN(d) ? vB : d.getTime(); }
+            }
             
             if (valA === 0 && valB !== 0) return 1;
             if (valB === 0 && valA !== 0) return -1;
             if (valA === 0 && valB === 0) return 0;
-
-            if (valA < valB) return currentSort.asc ? -1 : 1;
-            if (valA > valB) return currentSort.asc ? 1 : -1;
-            return 0;
+            return currentSort.asc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
         });
     }
 
     tbody.innerHTML = '';
-
-    if (filteredData.length === 0) {
+    
+    if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="empty-message">該当する女流棋士が見つかりません</td></tr>`;
         return;
     }
 
-    let k4 = document.getElementById('col4Select').value;
-    let k5 = document.getElementById('col5Select').value;
-    let k6 = document.getElementById('col6Select').value;
-    let k7 = document.getElementById('col7Select').value;
-    let k8 = document.getElementById('col8Select').value;
+    const colKeys = ['col4Select', 'col5Select', 'col6Select', 'col7Select', 'col8Select'].map(id => document.getElementById(id).value);
 
-    filteredData.forEach((k, index) => {
+    filtered.forEach((k, index) => {
         let tr = document.createElement('tr');
         
-        let nameDisplay = k.url ? `<a href="${k.url}" target="_blank" style="color: #cba135; font-weight: bold; text-decoration: none;">${k.name}</a>` : `<span style="font-weight: bold;">${k.name}</span>`;
+        // JSA、LPSA、フリーでバッジの色を変える
+        let badgeColor = k.affiliation === 'LPSA' ? '#e91e63' : (k.affiliation === 'フリー' ? '#607d8b' : '#1a3622');
+        let nameDisplay = `
+            <div style="text-align: left;">
+                <span style="font-size: 10px; background: ${badgeColor}; color: white; padding: 2px 4px; border-radius: 4px; margin-right: 5px; vertical-align: middle;">${k.affiliation}</span>
+                ${k.url ? `<a href="${k.url}" target="_blank" style="color: #cba135; font-weight: bold; text-decoration: none; vertical-align: middle;">${k.name}</a>` : `<span style="font-weight: bold; vertical-align: middle;">${k.name}</span>`}
+            </div>
+        `;
 
         tr.innerHTML = `
             <td>${index + 1}</td>
-            <td style="text-align: left;">${nameDisplay}</td>
+            <td>${nameDisplay}</td>
             <td style="font-weight:bold; color:#1a3622;">${k.highestRank}</td>
-            <td>${formatDateString(k[k4]) || '-'}</td>
-            <td class="tablet-col">${formatDateString(k[k5]) || '-'}</td>
-            <td class="tablet-col">${formatDateString(k[k6]) || '-'}</td>
-            <td class="pc-col">${formatDateString(k[k7]) || '-'}</td>
-            <td class="pc-col">${formatDateString(k[k8]) || '-'}</td>
+            <td>${formatDateString(k[colKeys[0]]) || '-'}</td>
+            <td class="tablet-col">${formatDateString(k[colKeys[1]]) || '-'}</td>
+            <td class="tablet-col">${formatDateString(k[colKeys[2]]) || '-'}</td>
+            <td class="pc-col">${formatDateString(k[colKeys[3]]) || '-'}</td>
+            <td class="pc-col">${formatDateString(k[colKeys[4]]) || '-'}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -294,14 +230,8 @@ function renderTable() {
 document.querySelectorAll('th.sortable').forEach(th => {
     th.addEventListener('click', function(e) {
         if (e.target.tagName.toLowerCase() === 'select') return;
-
         let colId = this.dataset.col;
-        let key;
-
-        if (colId === 'col3') key = 'highestRank';
-        else {
-            key = this.querySelector('select').value;
-        }
+        let key = colId === 'col3' ? 'highestRank' : this.querySelector('select').value;
 
         if (currentSort.colId === colId) {
             currentSort.asc = !currentSort.asc;
@@ -310,7 +240,6 @@ document.querySelectorAll('th.sortable').forEach(th => {
             currentSort.asc = (key === 'highestRank') ? false : true;
         }
         currentSort.key = key;
-
         renderTable();
     });
 });
@@ -318,17 +247,10 @@ document.querySelectorAll('th.sortable').forEach(th => {
 document.querySelectorAll('.dynamic-select').forEach(select => {
     select.addEventListener('change', function() {
         let th = this.closest('th');
-        let colId = th.dataset.col;
-        
-        if (currentSort.colId === colId) {
-            currentSort.key = this.value;
-        }
-        
+        if (currentSort.colId === th.dataset.col) currentSort.key = this.value;
         renderTable();
     });
-    select.addEventListener('click', function(e) {
-        e.stopPropagation();
-    });
+    select.addEventListener('click', e => e.stopPropagation());
 });
 
 document.getElementById('searchInput').addEventListener('input', renderTable);
