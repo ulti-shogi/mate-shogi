@@ -163,10 +163,21 @@ function setupUI() {
     const pSel = document.getElementById('playerSelect');
     pSel.innerHTML = '<option value="">名前を選択</option>';
     
-    // プルダウンの順番も「女流>三段>アマ」順に並べておく
-    const sortedPlayers = [...summaryArray].sort((a,b) => a.attrScore - b.attrScore || b.games - a.games);
+    // プルダウンの並び順を「絶対ルール」で統一
+    const sortedPlayers = [...summaryArray].sort((a, b) => {
+        let attrCmp = a.attrScore - b.attrScore;
+        if (attrCmp !== 0) return attrCmp; // 1. 属性スコア (女流>三段>アマ)
+
+        let gameCmp = b.games - a.games;
+        if (gameCmp !== 0) return gameCmp; // 2. 対局数が多い順
+
+        let winCmp = b.wins - a.wins;
+        if (winCmp !== 0) return winCmp;   // 3. 勝数が多い順
+
+        return a.name.localeCompare(b.name, 'ja'); // 4. 名前の五十音順
+    });
+    
     sortedPlayers.forEach(p => pSel.appendChild(new Option(p.name, p.name)));
-    pSel.addEventListener('change', renderHistoryTable);
 
     renderSummaryTable();
 }
@@ -180,31 +191,26 @@ function renderSummaryTable() {
         else if (sortState.colId === 'wins') { valA = a.wins; valB = b.wins; }
         else if (sortState.colId === 'losses') { valA = a.losses; valB = b.losses; }
         else if (sortState.colId === 'winRate') { valA = a.winRate; valB = b.winRate; }
-        else { valA = a.attrScore; valB = b.attrScore; } // attributeの処理
+        else { valA = a.attrScore; valB = b.attrScore; } // 初期は属性スコア
         
         let cmp = valA - valB;
         
-        // メイン条件で差がある場合はそのまま昇順・降順
+        // メイン条件で差がある場合は、指定された昇順・降順で並べる
         if (cmp !== 0) {
             return sortState.asc ? cmp : -cmp;
         }
 
-        // --- 同数・同率の場合のタイブレーク ---
-        if (sortState.colId === 'games') {
-            let winCmp = b.wins - a.wins;
-            if (winCmp !== 0) return winCmp;
-        } 
-        else if (sortState.colId === 'wins' || sortState.colId === 'losses' || sortState.colId === 'winRate') {
-            let gameCmp = b.games - a.games;
-            if (gameCmp !== 0) return gameCmp;
-        }
-        
-        // 最終タイブレーク: 属性スコア (1:女流 > 2:三段 > 3:アマ > 4:その他)
+        // --- 同数・同率の場合のタイブレーク（絶対ルール） ---
         let attrCmp = a.attrScore - b.attrScore;
-        if (attrCmp !== 0) return attrCmp;
+        if (attrCmp !== 0) return attrCmp; // 1. 属性スコア (女流>三段>アマ)
 
-        // それでも同じ場合は名前順
-        return a.name.localeCompare(b.name, 'ja');
+        let gameCmp = b.games - a.games;
+        if (gameCmp !== 0) return gameCmp; // 2. 対局数が多い順
+
+        let winCmp = b.wins - a.wins;
+        if (winCmp !== 0) return winCmp;   // 3. 勝数が多い順
+
+        return a.name.localeCompare(b.name, 'ja'); // 4. 名前の五十音順
     });
 
     const tbody = document.querySelector('#summaryTable tbody');
