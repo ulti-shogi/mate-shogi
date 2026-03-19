@@ -179,6 +179,8 @@ function setupUI() {
     
     sortedPlayers.forEach(p => pSel.appendChild(new Option(p.name, p.name)));
 
+    pSel.addEventListener('change', renderHistoryTable);
+
     renderSummaryTable();
 }
 
