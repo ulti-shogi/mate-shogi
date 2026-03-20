@@ -2,7 +2,6 @@ let gameData = [];
 let playerStats = {}; 
 let summaryArray = [];
 
-// 初期ソートは「序列（score）」の「昇順（数字が小さい順）」
 const sortState = { colId: 'score', asc: true };
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -28,24 +27,74 @@ function createHeaderMap(headerLine) {
 }
 
 function processCSV(gameText, joryuText) {
-    // 1. joryu.csvの処理（序列スコアの辞書を作成）
+    // ==========================================
+    // 1. joryu.csvの解析（所属・段位・番号の取得）
+    // ==========================================
     const joryuLines = joryuText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     const joryuHeaders = createHeaderMap(joryuLines[0]);
     const joryuMap = {};
 
-    // CSVに出現する行番号をそのまま序列スコアとして扱う
+    // 💡 段級位の評価リスト（上から順に高い）
+    const rankCols = [
+        { name: '女流七段', level: 10 },
+        { name: '女流六段', level: 9 },
+        { name: '女流五段', level: 8 },
+        { name: '女流四段', level: 7 },
+        { name: '女流三段', level: 6 },
+        { name: '女流二段', level: 5 },
+        { name: '女流初段', level: 4 },
+        { name: '女流１級', level: 3 },
+        { name: '女流２級', level: 2 },
+        { name: '女流３級', level: 1 }
+    ];
+
     for (let i = 1; i < joryuLines.length; i++) {
         const row = joryuLines[i].split(',');
         const nameStr = row[joryuHeaders['女流棋士名']];
-        if (nameStr) {
-            const name = nameStr.replace(/[\s　]/g, '').replace(/"/g, '');
-            joryuMap[name] = i; 
+        if (!nameStr) continue;
+
+        const name = nameStr.replace(/[\s　]/g, '').replace(/"/g, '');
+        const numStr = row[joryuHeaders['女流棋士番号']];
+        const number = numStr ? parseInt(numStr, 10) : 999;
+        const shozoku = row[joryuHeaders['所属']]?.trim() || "";
+
+        // 最も高い段級位を判定
+        let rankLevel = 0;
+        for (let rc of rankCols) {
+            const idx = joryuHeaders[rc.name];
+            if (idx !== undefined && row[idx]?.trim() !== '') {
+                rankLevel = rc.level;
+                break; // 💡 見つかったらループ終了（一番高い段位が確定）
+            }
         }
+        
+        joryuMap[name] = { number, shozoku, rankLevel };
     }
 
+    // ==========================================
+    // 2. 厳格な序列スコアの計算
+    // ==========================================
     function getPlayerScore(name) {
-        // joryu.csvに存在すればその行番号、いなければ（アマチュア等）99999を付与
-        return joryuMap[name] || 99999;
+        if (!joryuMap[name]) return 99999; // アマチュア等は最下部
+        
+        // ① トップ3の固定序列
+        if (name === '福間香奈') return 1;
+        if (name === '西山朋佳') return 2;
+        if (name === '清水市代') return 3;
+
+        const info = joryuMap[name];
+        
+        // ② 段級位スコア（段位が高いほど数字が小さくなるように減算）
+        const rankScore = (10 - info.rankLevel) * 1000;
+        
+        // ③ 所属スコア (JSA > LPSA > フリー)
+        let shozokuScore = 400; // デフォルト（その他）
+        if (info.shozoku === 'JSA') shozokuScore = 100;
+        else if (info.shozoku === 'LPSA') shozokuScore = 200;
+        else if (info.shozoku === 'フリー') shozokuScore = 300;
+
+        // ④ 最終スコア ＝ ベース(10000) ＋ 段位 ＋ 所属 ＋ 棋士番号
+        return 10000 + rankScore + shozokuScore + (isNaN(info.number) ? 999 : info.number);
     }
 
     function initPlayer(name) {
@@ -61,7 +110,9 @@ function processCSV(gameText, joryuText) {
         }
     }
 
-    // 2. result_2025_joryu.csvの処理
+    // ==========================================
+    // 3. result_2025_joryu.csv の処理
+    // ==========================================
     const gameLines = gameText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     const gameHeaders = createHeaderMap(gameLines[0]);
 
@@ -110,6 +161,9 @@ function processCSV(gameText, joryuText) {
     });
 }
 
+// ==========================================
+// 4. UI と タイブレーク（絶対ルール）の処理
+// ==========================================
 function setupUI() {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -136,7 +190,7 @@ function setupUI() {
     const pSel = document.getElementById('playerSelect');
     pSel.innerHTML = '<option value="">名前を選択</option>';
     
-    // 💡 プルダウンの並び順（絶対ルール：序列>対局数>勝数>五十音順）
+    // プルダウンも序列タイブレークの絶対ルールを適用
     const sortedPlayers = [...summaryArray].sort((a, b) => {
         let scoreCmp = a.score - b.score;
         if (scoreCmp !== 0) return scoreCmp;
@@ -151,8 +205,6 @@ function setupUI() {
     });
 
     sortedPlayers.forEach(p => pSel.appendChild(new Option(p.name, p.name)));
-    
-    // 💡 今回は忘れません！
     pSel.addEventListener('change', renderHistoryTable);
 
     renderSummaryTable();
@@ -171,27 +223,26 @@ function renderSummaryTable() {
         
         let cmp = valA - valB;
         
-        // メイン条件で差がある場合はそのまま昇順・降順
         if (cmp !== 0) {
             return sortState.asc ? cmp : -cmp;
         }
 
-        // --- 同数・同率の場合のタイブレーク（絶対ルール） ---
+        // --- 同数時の絶対ルール ---
         let scoreCmp = a.score - b.score;
-        if (scoreCmp !== 0) return scoreCmp; // 1. 序列スコア (joryu.csvの行番号)
+        if (scoreCmp !== 0) return scoreCmp; // 1. 序列スコア
 
         let gameCmp = b.games - a.games;
-        if (gameCmp !== 0) return gameCmp; // 2. 対局数が多い順
+        if (gameCmp !== 0) return gameCmp; // 2. 対局数（降順）
 
         let winCmp = b.wins - a.wins;
-        if (winCmp !== 0) return winCmp;   // 3. 勝数が多い順
+        if (winCmp !== 0) return winCmp;   // 3. 勝数（降順）
 
-        return a.name.localeCompare(b.name, 'ja'); // 4. 名前の五十音順
+        return a.name.localeCompare(b.name, 'ja'); // 4. 五十音順
     });
 
     const tbody = document.querySelector('#summaryTable tbody');
     tbody.innerHTML = viewData.map((d, index) => {
-        // アマチュア（スコア99999）は序列の表記を「-」にする
+        // スコアが99999（アマチュア等）の場合は「-」表示
         let rankDisplay = d.score < 99999 ? index + 1 : "-";
         
         return `<tr>
