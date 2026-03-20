@@ -2,6 +2,7 @@ let gameData = [];
 let playerStats = {}; 
 let summaryArray = [];
 
+// 初期ソートは「序列（score）」の「昇順（数字が小さい順）」
 const sortState = { colId: 'score', asc: true };
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -34,7 +35,6 @@ function processCSV(gameText, joryuText) {
     const joryuHeaders = createHeaderMap(joryuLines[0]);
     const joryuMap = {};
 
-    // 💡 段級位の評価リスト（上から順に高い）
     const rankCols = [
         { name: '女流七段', level: 10 },
         { name: '女流六段', level: 9 },
@@ -58,13 +58,12 @@ function processCSV(gameText, joryuText) {
         const number = numStr ? parseInt(numStr, 10) : 999;
         const shozoku = row[joryuHeaders['所属']]?.trim() || "";
 
-        // 最も高い段級位を判定
         let rankLevel = 0;
         for (let rc of rankCols) {
             const idx = joryuHeaders[rc.name];
             if (idx !== undefined && row[idx]?.trim() !== '') {
                 rankLevel = rc.level;
-                break; // 💡 見つかったらループ終了（一番高い段位が確定）
+                break; 
             }
         }
         
@@ -75,25 +74,20 @@ function processCSV(gameText, joryuText) {
     // 2. 厳格な序列スコアの計算
     // ==========================================
     function getPlayerScore(name) {
-        if (!joryuMap[name]) return 99999; // アマチュア等は最下部
+        if (!joryuMap[name]) return 99999; // アマチュア等はスコア99999を付与
         
-        // ① トップ3の固定序列
         if (name === '福間香奈') return 1;
         if (name === '西山朋佳') return 2;
         if (name === '清水市代') return 3;
 
         const info = joryuMap[name];
-        
-        // ② 段級位スコア（段位が高いほど数字が小さくなるように減算）
         const rankScore = (10 - info.rankLevel) * 1000;
         
-        // ③ 所属スコア (JSA > LPSA > フリー)
-        let shozokuScore = 400; // デフォルト（その他）
+        let shozokuScore = 400;
         if (info.shozoku === 'JSA') shozokuScore = 100;
         else if (info.shozoku === 'LPSA') shozokuScore = 200;
         else if (info.shozoku === 'フリー') shozokuScore = 300;
 
-        // ④ 最終スコア ＝ ベース(10000) ＋ 段位 ＋ 所属 ＋ 棋士番号
         return 10000 + rankScore + shozokuScore + (isNaN(info.number) ? 999 : info.number);
     }
 
@@ -116,6 +110,7 @@ function processCSV(gameText, joryuText) {
     const gameLines = gameText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     const gameHeaders = createHeaderMap(gameLines[0]);
 
+    // 💡 ここではアマチュアも含めて全対局を処理し、女流側の対局履歴に相手のデータを残す
     for (let i = 1; i < gameLines.length; i++) {
         const row = gameLines[i].split(',');
         if (row.length < 5) continue;
@@ -154,16 +149,18 @@ function processCSV(gameText, joryuText) {
         }
     }
 
-    summaryArray = Object.values(playerStats).map(p => {
-        let rate = p.games > 0 ? (p.wins / p.games) : 0;
-        let rateStr = p.games > 0 ? rate.toFixed(4) : "-";
-        return { ...p, winRate: rate, winRateStr: rateStr };
-    });
+    // ==========================================
+    // 4. サマリーの生成（アマチュアの除外）
+    // ==========================================
+    summaryArray = Object.values(playerStats)
+        .filter(p => p.score < 99999) // 💡 ここでアマチュア（名簿にない人）を表・プルダウンから完全に除外
+        .map(p => {
+            let rate = p.games > 0 ? (p.wins / p.games) : 0;
+            let rateStr = p.games > 0 ? rate.toFixed(4) : "-";
+            return { ...p, winRate: rate, winRateStr: rateStr };
+        });
 }
 
-// ==========================================
-// 4. UI と タイブレーク（絶対ルール）の処理
-// ==========================================
 function setupUI() {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -190,7 +187,6 @@ function setupUI() {
     const pSel = document.getElementById('playerSelect');
     pSel.innerHTML = '<option value="">名前を選択</option>';
     
-    // プルダウンも序列タイブレークの絶対ルールを適用
     const sortedPlayers = [...summaryArray].sort((a, b) => {
         let scoreCmp = a.score - b.score;
         if (scoreCmp !== 0) return scoreCmp;
@@ -227,26 +223,23 @@ function renderSummaryTable() {
             return sortState.asc ? cmp : -cmp;
         }
 
-        // --- 同数時の絶対ルール ---
         let scoreCmp = a.score - b.score;
-        if (scoreCmp !== 0) return scoreCmp; // 1. 序列スコア
+        if (scoreCmp !== 0) return scoreCmp;
 
         let gameCmp = b.games - a.games;
-        if (gameCmp !== 0) return gameCmp; // 2. 対局数（降順）
+        if (gameCmp !== 0) return gameCmp;
 
         let winCmp = b.wins - a.wins;
-        if (winCmp !== 0) return winCmp;   // 3. 勝数（降順）
+        if (winCmp !== 0) return winCmp;
 
-        return a.name.localeCompare(b.name, 'ja'); // 4. 五十音順
+        return a.name.localeCompare(b.name, 'ja');
     });
 
     const tbody = document.querySelector('#summaryTable tbody');
     tbody.innerHTML = viewData.map((d, index) => {
-        // スコアが99999（アマチュア等）の場合は「-」表示
-        let rankDisplay = d.score < 99999 ? index + 1 : "-";
-        
+        // アマチュアは既に除外されているため、純粋な順位をそのまま表示
         return `<tr>
-            <td>${rankDisplay}</td>
+            <td>${index + 1}</td>
             <td style="text-align:left; font-weight:bold;">${d.name}</td>
             <td>${d.games}</td>
             <td>${d.wins}</td>
