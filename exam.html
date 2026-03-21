@@ -3,230 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>棋士編入試験 - 将棋の殿堂</title>
+    <title>棋士編入試験の歴史 - 将棋の殿堂</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* 試験ページ専用の追加スタイル */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .back-link {
-            text-decoration: none;
-            color: #1a3622;
-            font-weight: bold;
-            background: #f0ebd8;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        .back-link:hover {
-            background: #e3decc;
-        }
-        .game-cell {
-            text-align: left;
-            font-size: 13px;
-            min-width: 90px;
-        }
-        .date-text {
-            display: block;
-            font-size: 11px;
-            color: #777;
-            margin-bottom: 2px;
-        }
-        .res-win {
-            color: #d32f2f; /* 赤:勝ち */
-            font-weight: bold;
-            margin-left: 4px;
-        }
-        .res-loss {
-            color: #1976d2; /* 青:負け */
-            font-weight: bold;
-            margin-left: 4px;
-        }
-        .date-cell {
-            font-size: 12px;
-            color: #555;
-        }
-    </style>
 </head>
 <body>
 
-<div class="header-section">
-    <h1>棋士編入試験の歴史</h1>
-    <p class="subtitle">特例試験から現在の編入試験制度までの全対局記録</p>
-</div>
-
 <div class="container">
-    <div class="page-header controls">
-        <a href="index.html" class="back-link">← トップへ戻る</a>
-        <input type="text" id="searchInput" placeholder="受験者名や対戦相手で検索...">
+    <h1><a href="index.html" style="text-decoration: none; color: inherit;">将棋の殿堂</a></h1>
+
+    <div class="average-card">
+        <h2 class="average-title" style="margin-bottom:0;">棋士編入試験の歴史</h2>
     </div>
 
-    <div style="overflow-x: auto;">
-        <table id="examTable">
+    <div class="tabs">
+        <button class="tab-btn active" data-target="panel-summary">過去の編入試験 結果一覧</button>
+        <button class="tab-btn" data-target="panel-history">受験者別 対局詳細</button>
+    </div>
+
+    <div id="panel-summary" class="panel active">
+        <table id="summaryTable">
             <thead>
                 <tr>
-                    <th class="sortable asc" data-sort="id">ID<div class="sort-icon"></div></th>
-                    <th class="sortable" data-sort="name">受験者<div class="sort-icon"></div></th>
-                    <th class="sortable" data-sort="meet">資格獲得日<div class="sort-icon"></div></th>
-                    <th class="sortable" data-sort="accept">受理日<div class="sort-icon"></div></th>
-                    <th>第1局</th>
-                    <th>第2局</th>
-                    <th>第3局</th>
-                    <th>第4局</th>
-                    <th>第5局</th>
-                    <th>第6局</th>
-                    <th class="sortable" data-sort="escape">ﾌﾘｸﾗ脱出日<div class="sort-icon"></div></th>
+                    <th class="sortable asc" data-col="id">ID<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="name">受験者<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="year">実施年<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="status">合否<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="winLossStr">勝敗<span class="sort-icon"></span></th>
                 </tr>
             </thead>
-            <tbody id="tableBody">
-                </tbody>
+            <tbody>
+                <tr><td colspan="5" class="empty-message">データ読み込み中...</td></tr>
+            </tbody>
         </table>
-        <p id="emptyMessage" class="empty-message" style="display: none;">該当するデータが見つかりません。</p>
     </div>
+
+    <div id="panel-history" class="panel">
+        <div class="controls" style="justify-content: center;">
+            <label style="font-weight: bold; color: #1a3622; display: flex; align-items: center;">受験者：
+                <select id="playerSelect" class="dynamic-select" style="max-width: 200px; margin: 0; display: inline-block;"></select>
+            </label>
+        </div>
+        
+        <div id="playerStatsCard" style="background-color: #f0ebd8; padding: 15px; margin: 15px 0; border-radius: 6px; text-align: center; color: #1a3622; display: none;">
+            </div>
+
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>局数</th>
+                    <th>対局日</th>
+                    <th>対戦相手</th>
+                    <th>結果</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="4" class="empty-message">受験者を選択してください</td></tr>
+            </tbody>
+        </table>
+    </div>
+
 </div>
 
-<footer>
-    <p>&copy; 2026 将棋の殿堂</p>
-</footer>
-
-<script>
-    let examData = [];
-    let currentSort = { column: 'id', order: 'asc' };
-
-    // ページ読み込み時にCSVを取得
-    document.addEventListener("DOMContentLoaded", async () => {
-        try {
-            const response = await fetch('exam.csv');
-            const csvText = await response.text();
-            parseCSV(csvText);
-            renderTable(examData);
-        } catch (error) {
-            console.error("CSVの読み込みに失敗しました:", error);
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" class="empty-message">データの読み込みに失敗しました。</td></tr>';
-        }
-    });
-
-    // CSVデータを解析して配列に変換
-    function parseCSV(text) {
-        const lines = text.trim().split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
-
-        for (let i = 1; i < lines.length; i++) {
-            const row = lines[i].split(',');
-            if (row.length < headers.length) continue;
-            
-            let obj = {};
-            headers.forEach((h, index) => {
-                obj[h] = row[index] ? row[index].trim() : '';
-            });
-            examData.push(obj);
-        }
-    }
-
-    // 対局のセル（日時、相手、結果）を生成する関数
-    function createGameHTML(date, opp, res) {
-        if (!opp && !date) return '<span style="color:#ccc;">-</span>';
-        let html = '<div class="game-cell">';
-        if (date) html += `<span class="date-text">${date}</span>`;
-        if (opp) html += opp;
-        if (res) {
-            const resClass = res === '○' ? 'res-win' : 'res-loss';
-            html += `<span class="${resClass}">${res}</span>`;
-        }
-        html += '</div>';
-        return html;
-    }
-
-    // 表を描画する関数
-    function renderTable(data) {
-        const tbody = document.getElementById('tableBody');
-        const emptyMessage = document.getElementById('emptyMessage');
-        tbody.innerHTML = '';
-
-        if (data.length === 0) {
-            emptyMessage.style.display = 'block';
-            return;
-        } else {
-            emptyMessage.style.display = 'none';
-        }
-
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            
-            tr.innerHTML = `
-                <td>${row.id}</td>
-                <td style="font-weight: bold;">${row.name}</td>
-                <td class="date-cell">${row.meet || '-'}</td>
-                <td class="date-cell">${row.accept || '-'}</td>
-                <td>${createGameHTML(row.date1, row.opp1, row.res1)}</td>
-                <td>${createGameHTML(row.date2, row.opp2, row.res2)}</td>
-                <td>${createGameHTML(row.date3, row.opp3, row.res3)}</td>
-                <td>${createGameHTML(row.date4, row.opp4, row.res4)}</td>
-                <td>${createGameHTML(row.date5, row.opp5, row.res5)}</td>
-                <td>${createGameHTML(row.date6, row.opp6, row.res6)}</td>
-                <td class="date-cell" style="font-weight:bold; color:#1a3622;">${row.escape || '-'}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    // 検索機能
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        const filtered = examData.filter(row => {
-            // 全てのプロパティの値を結合して検索
-            return Object.values(row).some(val => val.toLowerCase().includes(query));
-        });
-        renderTable(filtered);
-    });
-
-    // 並び替え（ソート）機能
-    document.querySelectorAll('th.sortable').forEach(th => {
-        th.addEventListener('click', () => {
-            const column = th.dataset.sort;
-            
-            // 昇順・降順の切り替え
-            if (currentSort.column === column) {
-                currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.column = column;
-                currentSort.order = 'asc';
-            }
-
-            // 見出しのアイコン更新
-            document.querySelectorAll('th.sortable').forEach(el => el.classList.remove('asc', 'desc'));
-            th.classList.add(currentSort.order);
-
-            // データの並び替え
-            const sortedData = [...examData].sort((a, b) => {
-                let valA = a[column] || '';
-                let valB = b[column] || '';
-
-                if (column === 'id') {
-                    valA = parseInt(valA, 10);
-                    valB = parseInt(valB, 10);
-                }
-
-                if (valA < valB) return currentSort.order === 'asc' ? -1 : 1;
-                if (valA > valB) return currentSort.order === 'asc' ? 1 : -1;
-                return 0;
-            });
-
-            // 検索ワードが入力されている場合は、その検索結果内でソート
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            if (query) {
-                const filtered = sortedData.filter(row => Object.values(row).some(val => val.toLowerCase().includes(query)));
-                renderTable(filtered);
-            } else {
-                renderTable(sortedData);
-            }
-        });
-    });
-</script>
-
+<script src="exam.js"></script>
 </body>
 </html>
