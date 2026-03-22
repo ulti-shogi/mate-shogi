@@ -1,7 +1,17 @@
 let examData = [];
 const sortState = { colId: 'id', asc: true };
 
-// ページ読み込み時にCSVを取得
+// 日付フォーマット変換関数（例: "2014-09-23" → "2014年9月23日"）
+function formatDate(dateStr) {
+    if (!dateStr || dateStr.trim() === '') return '-';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        // parseIntを使うことで "09" を "9" に変換します
+        return `${parts[0]}年${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
+    }
+    return dateStr;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     fetch('exam.csv')
         .then(res => { 
@@ -14,11 +24,10 @@ window.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
             console.error('エラー:', error);
-            document.querySelector('#examSummaryTable tbody').innerHTML = `<tr><td colspan="5" class="empty-message">${error.message}</td></tr>`;
+            document.querySelector('#examSummaryTable tbody').innerHTML = `<tr><td colspan="6" class="empty-message">${error.message}</td></tr>`;
         });
 });
 
-// CSVを解析し、プログラムで扱いやすい形に変換・計算する
 function processCSV(text) {
     const lines = text.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     const headers = lines[0].split(',').map(h => h.trim());
@@ -32,10 +41,15 @@ function processCSV(text) {
             d[h] = row[index] ? row[index].trim() : '';
         });
 
-        // 実施年の算出
+        const idNum = parseInt(d.id, 10) || 999;
+
+        // ① 属性の自動判別（IDが4, 6, 7なら女流、それ以外はアマ）
+        const attr = [4, 6, 7].includes(idNum) ? "女流" : "アマ";
+
+        // 実施年の算出（変換前のハイフン区切りのデータから年だけ抽出）
         let year = '-';
         if (d.date1) {
-            year = d.date1.split('-')[0];
+            year = d.date1.split('-')[0] + '年';
         }
 
         let wins = 0;
@@ -44,13 +58,13 @@ function processCSV(text) {
 
         for (let j = 1; j <= 6; j++) {
             const opp = d[`opp${j}`];
-            const date = d[`date${j}`];
+            const rawDate = d[`date${j}`];
             const res = d[`res${j}`];
 
-            if (opp || date) {
+            if (opp || rawDate) {
                 games.push({
                     round: `第${j}局`,
-                    date: date || '-',
+                    date: formatDate(rawDate), // ③ 年月日フォーマットに変換
                     opp: opp || '-',
                     res: res || '-'
                 });
@@ -60,23 +74,22 @@ function processCSV(text) {
             }
         }
 
-        // 合否判定
         let status = '試験中';
         if (wins >= 3) status = '合格';
         else if (losses >= 3) status = '不合格';
 
-        // 勝敗文字列
         let winLossStr = `${wins}勝${losses}敗`;
         if (status === '試験中' && wins === 0 && losses === 0) {
             winLossStr = '対局前';
         }
 
         examData.push({
-            id: parseInt(d.id, 10) || 999,
+            id: idNum,
             name: d.name,
-            meet: d.meet,
-            accept: d.accept,
-            escape: d.escape,
+            attr: attr, // 属性を格納
+            meet: formatDate(d.meet),     // ③ 変換
+            accept: formatDate(d.accept), // ③ 変換
+            escape: formatDate(d.escape), // ③ 変換
             year: year,
             wins: wins,
             losses: losses,
@@ -87,9 +100,7 @@ function processCSV(text) {
     }
 }
 
-// UIの初期設定
 function setupUI() {
-    // タブ切り替え処理
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -99,7 +110,6 @@ function setupUI() {
         });
     });
 
-    // ソートイベントの設定（今回はID列のみ動作します）
     document.querySelectorAll('#examSummaryTable th.sortable').forEach(th => {
         th.addEventListener('click', function() {
             let colId = this.dataset.col;
@@ -113,7 +123,6 @@ function setupUI() {
         });
     });
 
-    // プルダウンの初期化
     const pSel = document.getElementById('playerSelect');
     pSel.innerHTML = '<option value="">受験者を選択</option>';
     
@@ -125,11 +134,9 @@ function setupUI() {
     renderSummaryTable();
 }
 
-// パネル1：結果一覧の描画
 function renderSummaryTable() {
     let viewData = [...examData];
 
-    // ソート処理
     viewData.sort((a, b) => {
         let valA = a[sortState.colId];
         let valB = b[sortState.colId];
@@ -148,13 +155,12 @@ function renderSummaryTable() {
         return `<tr>
             <td>${d.id}</td>
             <td style="font-weight:bold;">${d.name}</td>
-            <td>${d.year}</td>
+            <td class="tablet-col">${d.attr}</td> <td>${d.year}</td>
             <td style="${statusColor}">${d.status}</td>
             <td style="font-weight:bold; color:#1a3622;">${d.winLossStr}</td>
         </tr>`;
     }).join('');
 
-    // 見出しの矢印アイコンを更新
     document.querySelectorAll('#examSummaryTable th.sortable').forEach(th => {
         th.classList.remove('asc', 'desc');
         if (th.dataset.col === sortState.colId) {
@@ -163,7 +169,6 @@ function renderSummaryTable() {
     });
 }
 
-// パネル2：個別の詳細の描画
 function renderHistoryTable() {
     const pSel = document.getElementById('playerSelect');
     const tbody = document.querySelector('#historyTable tbody');
@@ -181,16 +186,22 @@ function renderHistoryTable() {
     if (!pData) return;
 
     statsCard.style.display = "block";
+    
     let escapeHtml = "";
-    if (pData.status === "合格" && pData.escape) {
-        escapeHtml = `<br><span style="font-size: 14px; color: #555;">順位戦C級2組昇級日: <span style="color:#d32f2f; font-weight:bold;">${pData.escape}</span></span>`;
+    if (pData.status === "合格" && pData.escape !== "-") {
+        escapeHtml = `<div>順位戦C級2組昇級日： <span style="color:#d32f2f; font-weight:bold;">${pData.escape}</span></div>`;
     }
     
-    // サマリー内に「申請受理日」を追加
+    // ② サマリー内の情報をそれぞれ <div> で囲み、縦一列に並べる
     statsCard.innerHTML = `
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">${pData.name} （${pData.status} / ${pData.winLossStr}）</div>
-        <div style="font-size: 14px; color: #555;">資格獲得日: ${pData.meet || '-'}　|　申請受理日: ${pData.accept || '-'}</div>
-        ${escapeHtml}
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px dashed #cba135; padding-bottom: 8px;">
+            ${pData.name} <span style="font-size: 14px; font-weight: normal;">（${pData.status} / ${pData.winLossStr}）</span>
+        </div>
+        <div style="font-size: 14px; color: #555; line-height: 1.8;">
+            <div>資格獲得日： ${pData.meet}</div>
+            <div>申請受理日： ${pData.accept}</div>
+            ${escapeHtml}
+        </div>
     `;
 
     if (pData.games.length === 0) {
