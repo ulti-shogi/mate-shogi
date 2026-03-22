@@ -189,7 +189,7 @@ function renderHistoryTable() {
     
     let escapeHtml = "";
     if (pData.status === "合格" && pData.escape !== "-") {
-        escapeHtml = `<div>順位戦C級2組昇級日： <span style="color:#d32f2f; font-weight:bold;">${pData.escape}</span></div>`;
+        escapeHtml = `<div>順位戦昇級日： <span style="color:#d32f2f; font-weight:bold;">${pData.escape}</span></div>`;
     }
     
     // ② サマリー内の情報をそれぞれ <div> で囲み、縦一列に並べる
