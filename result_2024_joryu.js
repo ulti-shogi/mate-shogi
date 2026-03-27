@@ -268,7 +268,7 @@ function renderHistoryTable() {
     const pData = playerStats[pSel.value];
     statsCard.style.display = "block";
     let rateStr = pData.games > 0 ? (pData.wins / pData.games).toFixed(4) : "-";
-    statsCard.innerHTML = `2024年度成績： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）`;
+    statsCard.innerHTML = `2024年度： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）`;
 
     let games = [...pData.history].sort((a,b) => new Date(b.date) - new Date(a.date));
     tbody.innerHTML = games.length === 0 ? '<tr><td colspan="6" class="empty-message">データなし</td></tr>' :

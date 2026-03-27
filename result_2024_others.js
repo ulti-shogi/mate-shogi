@@ -2,19 +2,19 @@ let gameData = [];
 let playerStats = {}; 
 let summaryArray = [];
 
-// 初期ソートは「属性スコア（女流>三段>アマ）」基準（asc: true でスコアが小さい順）
+// 初期ソートは「属性スコア（女流>三段>公式アマ>女流アマ）」基準（asc: true でスコアが小さい順）
 const sortState = { colId: 'attribute', asc: true };
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 💡 ひとまず公式戦のCSVのみ読み込みます（女流棋戦CSVができたらここに追加します）
+    // 💡 4つのCSVを同時に読み込みます
     Promise.all([
         fetch('result_2024.csv').then(res => { if(!res.ok) throw new Error('result_2024.csv失敗'); return res.text(); }),
         fetch('kishi.csv').then(res => { if(!res.ok) throw new Error('kishi.csv失敗'); return res.text(); }),
-        fetch('joryu.csv').then(res => { if(!res.ok) throw new Error('joryu.csv失敗'); return res.text(); })
-        // fetch('result_2024_joryu.csv').then(...) ← 後日ここに追加
+        fetch('joryu.csv').then(res => { if(!res.ok) throw new Error('joryu.csv失敗'); return res.text(); }),
+        fetch('result_2024_joryu.csv').then(res => { if(!res.ok) throw new Error('result_2024_joryu.csv失敗'); return res.text(); })
     ])
-    .then(([gameText, kishiText, joryuText]) => {
-        processCSV(gameText, kishiText, joryuText);
+    .then(([gameText, kishiText, joryuText, joryuGameText]) => {
+        processCSV(gameText, kishiText, joryuText, joryuGameText);
         setupUI();
     })
     .catch(error => console.error('エラー:', error));
@@ -30,7 +30,7 @@ function createHeaderMap(headerLine) {
     return map;
 }
 
-function processCSV(gameText, kishiText, joryuText) {
+function processCSV(gameText, kishiText, joryuText, joryuGameText) {
     // ==========================================
     // 1. プロ棋士名簿（除外用）
     // ==========================================
@@ -47,7 +47,7 @@ function processCSV(gameText, kishiText, joryuText) {
     }
 
     // ==========================================
-    // 2. 女流棋士名簿（属性判定用）
+    // 2. 女流棋士名簿（属性判定 ＆ 女流棋戦での除外用）
     // ==========================================
     const joryuLines = joryuText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
     const joryuHeaders = createHeaderMap(joryuLines[0]);
@@ -62,24 +62,35 @@ function processCSV(gameText, kishiText, joryuText) {
     }
 
     // ==========================================
-    // 3. 属性スコア判定ロジック（現在は公式戦のみ）
+    // 3. 属性スコア判定ロジック（4段階）
     // ==========================================
-    function getAttributeScore(name) {
-        if (joryuMap[name]) return 1;          // 女流棋士（公式戦参加）
-        if (name.includes('三段')) return 2;   // 奨励会三段
-        return 3;                              // アマチュア（公式戦参加）
+    function getAttributeScore(name, source) {
+        if (source === 'koushiki') {
+            if (joryuMap[name]) return 1;          // 女流棋士（公式戦参加）
+            if (name.includes('三段')) return 2;   // 奨励会三段
+            return 3;                              // アマチュア（公式戦参加）
+        } else if (source === 'joryu') {
+            return 4;                              // アマチュア（女流棋戦参加）
+        }
+        return 5; // セーフティネット
     }
 
-    function initPlayer(name) {
+    function initPlayer(name, source) {
         if (!playerStats[name]) {
             playerStats[name] = {
                 name: name,
-                attrScore: getAttributeScore(name),
+                attrScore: getAttributeScore(name, source),
                 games: 0,
                 wins: 0,
                 losses: 0,
                 history: []
             };
+        } else {
+            // 公式戦と女流棋戦の両方に出場している場合、高いランク（小さい数字）を優先
+            const newScore = getAttributeScore(name, source);
+            if (newScore < playerStats[name].attrScore) {
+                playerStats[name].attrScore = newScore;
+            }
         }
     }
 
@@ -108,7 +119,7 @@ function processCSV(gameText, kishiText, joryuText) {
         if(broadcast) extra += (extra ? " / 放送:" : "放送:") + broadcast;
 
         if (p1 && !kishiMap[p1]) {
-            initPlayer(p1);
+            initPlayer(p1, 'koushiki');
             if (r1 === '○' || r1 === '●' || r1 === '□' || r1 === '■') {
                 playerStats[p1].games++;
                 if (r1 === '○' || r1 === '□') playerStats[p1].wins++;
@@ -117,7 +128,51 @@ function processCSV(gameText, kishiText, joryuText) {
             }
         }
         if (p2 && !kishiMap[p2]) {
-            initPlayer(p2);
+            initPlayer(p2, 'koushiki');
+            if (r2 === '○' || r2 === '●' || r2 === '□' || r2 === '■') {
+                playerStats[p2].games++;
+                if (r2 === '○' || r2 === '□') playerStats[p2].wins++;
+                if (r2 === '●' || r2 === '■') playerStats[p2].losses++;
+                playerStats[p2].history.push({ date: date, match: match, mySengo: "後手", opponent: p1, result: r2, extra: extra });
+            }
+        }
+    }
+
+    // ==========================================
+    // 5. 女流棋戦データの処理（女流棋士を除外して集計）
+    // ==========================================
+    const joryuGameLines = joryuGameText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
+    const joryuGameHeaders = createHeaderMap(joryuGameLines[0]);
+
+    for (let i = 1; i < joryuGameLines.length; i++) {
+        const row = joryuGameLines[i].split(',');
+        if (row.length < 5) continue;
+
+        const date = row[joryuGameHeaders['対局日']]?.trim() || "";
+        const match = row[joryuGameHeaders['棋戦']]?.trim() || "";
+        const notes = row[joryuGameHeaders['備考']]?.trim() || "";
+        const r1 = row[joryuGameHeaders['先手の勝敗']]?.trim() || "";
+        const p1 = row[joryuGameHeaders['先手']] ? row[joryuGameHeaders['先手']].replace(/[\s　]/g, '').replace(/"/g, '') : "";
+        const p2 = row[joryuGameHeaders['後手']] ? row[joryuGameHeaders['後手']].replace(/[\s　]/g, '').replace(/"/g, '') : "";
+        const r2 = row[joryuGameHeaders['後手の勝敗']]?.trim() || "";
+        const thousand = row[joryuGameHeaders['千日手']]?.trim() || "";
+        const broadcast = row[joryuGameHeaders['放送日']]?.trim() || "";
+
+        let extra = notes;
+        if(thousand) extra += (extra ? " / " : "") + thousand;
+        if(broadcast) extra += (extra ? " / 放送:" : "放送:") + broadcast;
+
+        if (p1 && !joryuMap[p1]) { 
+            initPlayer(p1, 'joryu');
+            if (r1 === '○' || r1 === '●' || r1 === '□' || r1 === '■') {
+                playerStats[p1].games++;
+                if (r1 === '○' || r1 === '□') playerStats[p1].wins++;
+                if (r1 === '●' || r1 === '■') playerStats[p1].losses++;
+                playerStats[p1].history.push({ date: date, match: match, mySengo: "先手", opponent: p2, result: r1, extra: extra });
+            }
+        }
+        if (p2 && !joryuMap[p2]) { 
+            initPlayer(p2, 'joryu');
             if (r2 === '○' || r2 === '●' || r2 === '□' || r2 === '■') {
                 playerStats[p2].games++;
                 if (r2 === '○' || r2 === '□') playerStats[p2].wins++;
@@ -160,17 +215,18 @@ function setupUI() {
     const pSel = document.getElementById('playerSelect');
     pSel.innerHTML = '<option value="">名前を選択</option>';
     
+    // プルダウンの並び順を「絶対ルール」で統一
     const sortedPlayers = [...summaryArray].sort((a, b) => {
         let attrCmp = a.attrScore - b.attrScore;
-        if (attrCmp !== 0) return attrCmp; 
+        if (attrCmp !== 0) return attrCmp; // 1. 属性スコア (女流>三段>公式アマ>女流アマ)
 
         let gameCmp = b.games - a.games;
-        if (gameCmp !== 0) return gameCmp; 
+        if (gameCmp !== 0) return gameCmp; // 2. 対局数が多い順
 
         let winCmp = b.wins - a.wins;
-        if (winCmp !== 0) return winCmp;   
+        if (winCmp !== 0) return winCmp;   // 3. 勝数が多い順
 
-        return a.name.localeCompare(b.name, 'ja'); 
+        return a.name.localeCompare(b.name, 'ja'); // 4. 名前の五十音順
     });
     
     sortedPlayers.forEach(p => pSel.appendChild(new Option(p.name, p.name)));
@@ -196,16 +252,17 @@ function renderSummaryTable() {
             return sortState.asc ? cmp : -cmp;
         }
 
+        // --- 同数・同率の場合のタイブレーク（絶対ルール） ---
         let attrCmp = a.attrScore - b.attrScore;
-        if (attrCmp !== 0) return attrCmp;
+        if (attrCmp !== 0) return attrCmp; // 1. 属性スコア (1〜4)
 
         let gameCmp = b.games - a.games;
-        if (gameCmp !== 0) return gameCmp;
+        if (gameCmp !== 0) return gameCmp; // 2. 対局数が多い順
 
         let winCmp = b.wins - a.wins;
-        if (winCmp !== 0) return winCmp;
+        if (winCmp !== 0) return winCmp;   // 3. 勝数が多い順
 
-        return a.name.localeCompare(b.name, 'ja');
+        return a.name.localeCompare(b.name, 'ja'); // 4. 名前の五十音順
     });
 
     const tbody = document.querySelector('#summaryTable tbody');
