@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全対局成績・履歴検索 - 将棋の殿堂</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 検索エリアのスタイル追加 */
+        .search-area {
+            background-color: #f0ebd8;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .search-area label {
+            font-weight: bold;
+            color: #1a3622;
+        }
+        .search-area select {
+            padding: 5px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1><a href="index.html" style="text-decoration: none; color: inherit;">将棋の殿堂</a></h1>
+
+    <div class="average-card">
+        <h2 class="average-title" style="margin-bottom:0;">全対局成績・履歴検索</h2>
+    </div>
+
+    <div class="search-area">
+        <label>年度：
+            <select id="yearSelect">
+                <option value="all">全期間</option>
+                <option value="2026" selected>2026年度</option>
+                <option value="2025">2025年度</option>
+            </select>
+        </label>
+        
+        <label>棋戦：
+            <select id="matchSelect">
+                <option value="all">すべての棋戦</option>
+                <option value="竜王戦">竜王戦</option>
+                <option value="名人戦">名人戦 (順位戦)</option>
+                <option value="王位戦">王位戦</option>
+                <option value="叡王戦">叡王戦</option>
+                <option value="王座戦">王座戦</option>
+                <option value="棋王戦">棋王戦</option>
+                <option value="王将戦">王将戦</option>
+                <option value="棋聖戦">棋聖戦</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-target="panel-summary">勝敗一覧</button>
+        <button class="tab-btn" data-target="panel-history">個人別 対局履歴</button>
+    </div>
+
+    <div id="panel-summary" class="panel active">
+        <table id="summaryTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-col="score">序列<span class="sort-icon"></span></th>
+                    <th>名前</th>
+                    <th class="sortable" data-col="games">対局数<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="wins">勝数<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="losses">負数<span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="winRate">勝率<span class="sort-icon"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6" class="empty-message">データ読み込み中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="panel-history" class="panel">
+        <div class="controls" style="justify-content: center;">
+            <label style="font-weight: bold; color: #1a3622; display: flex; align-items: center;">名前：
+                <select id="playerSelect" class="dynamic-select" style="max-width: 200px; margin: 0; display: inline-block;"></select>
+            </label>
+        </div>
+        
+        <div id="playerStatsCard" style="background-color: #f0ebd8; padding: 10px; margin: 15px 0; border-radius: 6px; text-align: center; font-weight: bold; color: #1a3622; display: none;">
+        </div>
+
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>対局日</th>
+                    <th>棋戦詳細</th>
+                    <th>手番</th>
+                    <th>対局相手</th>
+                    <th>結果</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="5" class="empty-message">名前を選択してください</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="result.js"></script>
+</body>
+</html>
