@@ -5,7 +5,7 @@ let summaryArray = [];   // 表描画用の配列
 
 const sortState = { colId: 'score', asc: true };
 
-// 💡 読み込むテキストファイル（.txt）のリスト
+// 💡 読み込むテキストファイルのリスト（正確なファイル名に修正）
 const dataFiles = [
     '第74期王座戦.txt',
     '第85期順位戦.txt',
@@ -14,18 +14,27 @@ const dataFiles = [
     '第67期王位戦.txt',
     '第76期王将戦.txt',
     '第11期叡王戦.txt',
-    '第97期棋聖戦.txt'
+    '第97期棋聖戦.txt',
+    'タイトル戦対局結果.txt', // 💡修正
+    '第76回NHK杯本戦.txt',   // 💡修正
+    '第34期銀河戦.txt',
+    '第47回JT杯.txt',
+    '第16期加古川青流戦.txt', // 💡修正
+    '第57期新人王戦.txt',
+    '第4回達人戦.txt',
+    '第20回朝日杯.txt'
 ];
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 棋士名簿(.csv)と、対局データ(.txt)を同時にすべて読み込む
     const fetchPromises = dataFiles.map(file => 
         fetch(file)
             .then(res => res.ok ? res.text() : "")
-            .catch(() => "") // ファイルが無くてもエラーで止めない
+            .catch(() => {
+                console.warn(`ファイルが見つかりません: ${file}`);
+                return "";
+            })
     );
     
-    // 序列計算のために kishi.csv も読み込む
     fetchPromises.push(
         fetch('kishi.csv')
             .then(res => res.ok ? res.text() : "")
@@ -33,14 +42,14 @@ window.addEventListener('DOMContentLoaded', () => {
     );
 
     Promise.all(fetchPromises).then(results => {
-        const kishiText = results.pop(); // 一番最後に追加したのが kishi.csv
-        const gameTexts = results;       // 残りが対局データ(.txt)
+        const kishiText = results.pop(); 
+        const gameTexts = results;       
 
         setupKishiMap(kishiText);
         parseAllGames(gameTexts);
         
         setupUI();
-        applyFiltersAndAggregate(); // 初回の集計と描画
+        applyFiltersAndAggregate(); 
     });
 });
 
@@ -71,7 +80,6 @@ function setupKishiMap(kishiText) {
     }
 }
 
-// 💡 8つのテキストファイルを1つの巨大な「対局リスト」にまとめる
 function parseAllGames(gameTexts) {
     gameTexts.forEach(text => {
         if (!text) return;
@@ -84,16 +92,27 @@ function parseAllGames(gameTexts) {
             const row = lines[i].split(',');
             if (row.length < 5) continue;
 
-            const the = row[headers['the']]?.trim() || "";
+            // 💡 列名が 'the' だったり 'period' だったりする揺らぎを吸収
+            let theStr = row[headers['the']]?.trim();
+            if (!theStr && headers['period'] !== undefined) {
+                theStr = row[headers['period']]?.trim();
+            }
+            
             const match = row[headers['match']]?.trim() || "";
             const phase = row[headers['phase']]?.trim() || "";
             const detail = row[headers['detail']]?.trim() || "";
             const notes = row[headers['notes']]?.trim() || "";
             const date = row[headers['game_date']]?.trim() || "";
             
-            // 💡 棋戦の詳細情報を美しく合体（例：第74期 王座戦 一次予選 1組）
             let matchDetailStr = "";
-            if (the) matchDetailStr += `第${the}期 `;
+            if (theStr) {
+                // JT杯などは「第〇回」、王将戦などは「第〇期」と表示を分ける
+                if(match === "JT杯" || match === "NHK杯" || match === "朝日杯" || match === "達人戦") {
+                    matchDetailStr += `第${theStr}回 `;
+                } else {
+                    matchDetailStr += `第${theStr}期 `;
+                }
+            }
             if (match) matchDetailStr += `${match} `;
             if (phase) matchDetailStr += `${phase} `;
             if (detail) matchDetailStr += `${detail} `;
@@ -102,8 +121,8 @@ function parseAllGames(gameTexts) {
 
             allGameRecords.push({
                 date: date,
-                match: match,          // プルダウン絞り込み用
-                matchDetail: matchDetailStr, // 画面表示用
+                match: match,          
+                matchDetail: matchDetailStr, 
                 p1: row[headers['player_A']]?.replace(/[\s ]/g, '').replace(/"/g, '') || "",
                 p1_sengo: row[headers['A']]?.trim() || "",
                 p1_res: row[headers['a']]?.trim() || "",
@@ -115,64 +134,63 @@ function parseAllGames(gameTexts) {
     });
 }
 
-// 💡 画面のプルダウン（年度・棋戦）が変わるたびに呼び出される集計処理
 function applyFiltersAndAggregate() {
     const yearFilter = document.getElementById('yearSelect').value;
     const matchFilter = document.getElementById('matchSelect').value;
 
-    playerStats = {}; // 成績をリセット
+    playerStats = {}; 
 
     function initPlayer(name) {
+        // 名前が空文字、または「〇〇の勝者」のようなダミーデータの場合は登録しない
+        if (!name || name.includes('の勝者') || name === '未定') return false;
+
         if (!playerStats[name]) {
-            // 棋士番号を使って序列スコアを作成（未定義の人は99999）
             const score = kishiMap[name] !== undefined ? kishiMap[name] : 99999;
             playerStats[name] = { name: name, score: score, games: 0, wins: 0, losses: 0, history: [] };
         }
+        return true;
     }
 
-    // 💡 日付文字列から年度を計算する関数（2026-02-xx などにも対応）
     function getNendo(dateStr) {
         if (!dateStr || !dateStr.includes('-')) return null;
         let parts = dateStr.split('-');
         let y = parseInt(parts[0], 10);
         let m = parseInt(parts[1], 10);
         if (isNaN(y)) return null;
-        if (isNaN(m)) return y; // 月がxxなら暫定でその年を年度とする
+        if (isNaN(m)) return y; 
         return m <= 3 ? y - 1 : y;
     }
 
-    // 巨大なリストから条件に合うものだけをカウント
     allGameRecords.forEach(g => {
-        // 1. 年度の絞り込み
         if (yearFilter !== 'all') {
             const nendo = getNendo(g.date);
-            if (nendo !== parseInt(yearFilter, 10)) return; // 該当しない対局はスルー
+            if (nendo !== parseInt(yearFilter, 10)) return; 
         }
         
-        // 2. 棋戦の絞り込み
-        if (matchFilter !== 'all' && g.match !== matchFilter) {
-            return; // 該当しない棋戦はスルー
+        // 名人戦は「順位戦」ファイルの中に含まれることが多いので特別扱い
+        if (matchFilter !== 'all') {
+             if (matchFilter === '名人戦') {
+                 if (g.match !== '名人戦' && g.match !== '順位戦') return;
+             } else {
+                 if (g.match !== matchFilter) return;
+             }
         }
 
-        // 先手（A）の処理
-        if (g.p1) {
-            initPlayer(g.p1);
-            if (g.p1_res === '☆' || g.p1_res === '★' || g.p1_res === '□' || g.p1_res === '■') {
+        if (initPlayer(g.p1)) {
+            if (g.p1_res === '☆' || g.p1_res === '★' || g.p1_res === '□' || g.p1_res === '■' || g.p1_res === '○' || g.p1_res === '●') {
                 playerStats[g.p1].games++;
-                if (g.p1_res === '☆' || g.p1_res === '□') playerStats[g.p1].wins++;
-                if (g.p1_res === '★' || g.p1_res === '■') playerStats[g.p1].losses++;
+                if (g.p1_res === '☆' || g.p1_res === '□' || g.p1_res === '○') playerStats[g.p1].wins++;
+                if (g.p1_res === '★' || g.p1_res === '■' || g.p1_res === '●') playerStats[g.p1].losses++;
                 playerStats[g.p1].history.push({
                     date: g.date, matchStr: g.matchDetail, mySengo: g.p1_sengo, opponent: g.p2, result: g.p1_res
                 });
             }
         }
-        // 後手（B）の処理
-        if (g.p2) {
-            initPlayer(g.p2);
-            if (g.p2_res === '☆' || g.p2_res === '★' || g.p2_res === '□' || g.p2_res === '■') {
+        if (initPlayer(g.p2)) {
+            if (g.p2_res === '☆' || g.p2_res === '★' || g.p2_res === '□' || g.p2_res === '■' || g.p2_res === '○' || g.p2_res === '●') {
                 playerStats[g.p2].games++;
-                if (g.p2_res === '☆' || g.p2_res === '□') playerStats[g.p2].wins++;
-                if (g.p2_res === '★' || g.p2_res === '■') playerStats[g.p2].losses++;
+                if (g.p2_res === '☆' || g.p2_res === '□' || g.p2_res === '○') playerStats[g.p2].wins++;
+                if (g.p2_res === '★' || g.p2_res === '■' || g.p2_res === '●') playerStats[g.p2].losses++;
                 playerStats[g.p2].history.push({
                     date: g.date, matchStr: g.matchDetail, mySengo: g.p2_sengo, opponent: g.p1, result: g.p2_res
                 });
@@ -180,7 +198,6 @@ function applyFiltersAndAggregate() {
         }
     });
 
-    // 表用の配列を作成して再描画
     summaryArray = Object.values(playerStats).map(p => {
         let rate = p.games > 0 ? (p.wins / p.games) : 0;
         let rateStr = p.games > 0 ? rate.toFixed(4) : "-";
@@ -189,11 +206,10 @@ function applyFiltersAndAggregate() {
 
     updatePlayerSelect();
     renderSummaryTable();
-    renderHistoryTable(); // 履歴テーブルもリセット
+    renderHistoryTable(); 
 }
 
 function setupUI() {
-    // タブ切り替え
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -203,7 +219,6 @@ function setupUI() {
         });
     });
 
-    // 表のソート
     document.querySelectorAll('#summaryTable th.sortable').forEach(th => {
         th.addEventListener('click', function() {
             let colId = this.dataset.col;
@@ -217,7 +232,6 @@ function setupUI() {
         });
     });
 
-    // 絞り込みコントローラーのイベント
     document.getElementById('yearSelect').addEventListener('change', applyFiltersAndAggregate);
     document.getElementById('matchSelect').addEventListener('change', applyFiltersAndAggregate);
     document.getElementById('playerSelect').addEventListener('change', renderHistoryTable);
@@ -228,7 +242,6 @@ function updatePlayerSelect() {
     const currentValue = pSel.value;
     pSel.innerHTML = '<option value="">名前を選択</option>';
     
-    // 絶対ルールでソート
     const sortedPlayers = [...summaryArray].sort((a, b) => {
         let scoreCmp = a.score - b.score;
         if (scoreCmp !== 0) return scoreCmp;
@@ -245,7 +258,6 @@ function updatePlayerSelect() {
         if (p.name === currentValue) valueExists = true;
     });
 
-    // 絞り込み後に同じ人がいれば選択状態をキープ
     if (valueExists) pSel.value = currentValue;
 }
 
@@ -263,7 +275,6 @@ function renderSummaryTable() {
         let cmp = valA - valB;
         if (cmp !== 0) return sortState.asc ? cmp : -cmp;
 
-        // タイブレーク
         let scoreCmp = a.score - b.score;
         if (scoreCmp !== 0) return scoreCmp;
         let gameCmp = b.games - a.games;
@@ -309,7 +320,6 @@ function renderHistoryTable() {
     const pData = playerStats[pSel.value];
     statsCard.style.display = "block";
     
-    // 絞り込み状態をカードに表示
     const yearFilter = document.getElementById('yearSelect');
     const matchFilter = document.getElementById('matchSelect');
     const yearText = yearFilter.options[yearFilter.selectedIndex].text;
@@ -318,9 +328,7 @@ function renderHistoryTable() {
     let rateStr = pData.games > 0 ? (pData.wins / pData.games).toFixed(4) : "-";
     statsCard.innerHTML = `【${yearText} / ${matchText}】成績： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）`;
 
-    // 💡 新しい記号（☆/★）に合わせて色分けを変更
     let games = [...pData.history].sort((a,b) => {
-        // '202x-xx-xx' など無効な日付は後ろに回す
         let dA = new Date(a.date.replace(/x/g, '0'));
         let dB = new Date(b.date.replace(/x/g, '0'));
         return dB - dA;
@@ -328,8 +336,8 @@ function renderHistoryTable() {
 
     tbody.innerHTML = games.length === 0 ? '<tr><td colspan="5" class="empty-message">データなし</td></tr>' :
         games.map(g => {
-            let resColor = (g.result === "☆" || g.result === "□") ? "color: #d9534f; font-weight: bold;" : 
-                           ((g.result === "★" || g.result === "■") ? "color: #0275d8;" : "");
+            let resColor = (g.result === "☆" || g.result === "□" || g.result === "○") ? "color: #d9534f; font-weight: bold;" : 
+                           ((g.result === "★" || g.result === "■" || g.result === "●") ? "color: #0275d8;" : "");
             return `<tr>
                 <td>${g.date}</td>
                 <td style="font-weight:bold; text-align:left;">${g.matchStr}</td>
