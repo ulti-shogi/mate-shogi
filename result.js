@@ -104,7 +104,7 @@ function parseAllGames(gameTexts) {
             if (match) matchDetailStr += `${match} `;
             if (phase) matchDetailStr += `${phase} `;
             if (detail) matchDetailStr += `${detail} `;
-            if (notes && notes !== "なし") matchDetailStr += `(${notes})`;
+            if (notes && notes !== "なし") matchDetailStr += ` ${notes}`; // 💡 カッコを削除
             matchDetailStr = matchDetailStr.replace(/\s+/g, ' ').trim();
 
             allGameRecords.push({
@@ -312,10 +312,10 @@ window.showHistory = function(playerName) {
 
             return `<tr>
                 <td style="white-space: nowrap;">${g.date}</td>
-                <td style="font-weight:bold; text-align:left;">${g.matchStr}</td>
-                <td>${g.mySengo}</td>
-                <td>${oppLink}</td>
                 <td style="${resColor} font-size:16px;">${g.result}</td>
+                <td>${oppLink}</td>
+                <td>${g.mySengo}</td>
+                <td style="font-weight:bold; text-align:left;">${g.matchStr}</td>
             </tr>`;
         }).join('');
 };
