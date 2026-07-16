@@ -1,12 +1,12 @@
 let allGameRecords = []; 
 let kishiMap = {};       
-let officialKishiSet = new Set(); // 💡 棋士判定用の名簿(profile_kishi.txt)
+let officialKishiSet = new Set(); 
 let playerStats = {};    
-let kishiSummary = [];   // 💡 棋士用の描画配列
-let othersSummary = [];  // 💡 棋士以外の描画配列
+let kishiSummary = [];   
+let othersSummary = [];  
 
 const sortStateKishi = { colId: 'score', asc: true };
-const sortStateOthers = { colId: 'games', asc: false }; // 棋士以外は対局数順がデフォルト
+const sortStateOthers = { colId: 'games', asc: false }; 
 
 const dataFiles = [
     '第74期王座戦.txt', '第85期順位戦.txt', '第39期竜王戦.txt', '第52期棋王戦.txt',
@@ -21,7 +21,6 @@ window.addEventListener('DOMContentLoaded', () => {
         fetch(file).then(res => res.ok ? res.text() : "").catch(() => "")
     );
     
-    // kishi.csv (序列用) と profile_kishi.txt (棋士判定用) の両方を読み込む
     fetchPromises.push(fetch('kishi.csv').then(res => res.ok ? res.text() : "").catch(() => ""));
     fetchPromises.push(fetch('profile_kishi.txt').then(res => res.ok ? res.text() : "").catch(() => ""));
 
@@ -46,7 +45,6 @@ function createHeaderMap(headerLine) {
 }
 
 function setupKishiMap(kishiText, profileText) {
-    // 序列用データ
     if (kishiText) {
         const lines = kishiText.replace(/\r/g, '').split('\n').filter(l => l.trim() !== '');
         if (lines.length > 0) {
@@ -62,7 +60,6 @@ function setupKishiMap(kishiText, profileText) {
             }
         }
     }
-    // 💡 棋士判定用データ (profile_kishi.txt)
     if (profileText) {
         const lines = profileText.replace(/\r/g, '').split('\n').filter(l => l.trim() !== '');
         if (lines.length > 0) {
@@ -131,7 +128,6 @@ function applyFiltersAndAggregate() {
         if (!name || name.includes('の勝者') || name === '未定') return false;
         if (!playerStats[name]) {
             const score = kishiMap[name] !== undefined ? kishiMap[name] : 99999;
-            // 💡 公式名簿にあるかどうかのフラグを持たせる
             const isKishi = officialKishiSet.has(name);
             playerStats[name] = { name: name, score: score, isKishi: isKishi, games: 0, wins: 0, losses: 0, history: [] };
         }
@@ -170,7 +166,6 @@ function applyFiltersAndAggregate() {
         }
     });
 
-    // 💡 全成績を計算後、棋士とそれ以外に分割する
     const allSummary = Object.values(playerStats).map(p => {
         let rate = p.games > 0 ? (p.wins / p.games) : 0;
         return { ...p, winRate: rate, winRateStr: p.games > 0 ? rate.toFixed(4) : "-" };
@@ -179,10 +174,12 @@ function applyFiltersAndAggregate() {
     kishiSummary = allSummary.filter(p => p.isKishi);
     othersSummary = allSummary.filter(p => !p.isKishi);
 
-    updatePlayerSelect(allSummary);
     renderSummaryTable('kishi');
     renderSummaryTable('others');
-    renderHistoryTable(); 
+
+    // 💡 絞り込みが変わったら必ずリスト画面に戻す
+    document.getElementById('list-view').style.display = 'block';
+    document.getElementById('history-view').style.display = 'none';
 }
 
 function setupUI() {
@@ -195,11 +192,10 @@ function setupUI() {
         });
     });
 
-    // ソートイベントの割り当て
     document.querySelectorAll('th.sortable').forEach(th => {
         th.addEventListener('click', function() {
             let colId = this.dataset.col;
-            let target = this.dataset.target; // kishi or others
+            let target = this.dataset.target; 
             let state = target === 'kishi' ? sortStateKishi : sortStateOthers;
 
             if (state.colId === colId) {
@@ -214,31 +210,13 @@ function setupUI() {
 
     document.getElementById('yearSelect').addEventListener('change', applyFiltersAndAggregate);
     document.getElementById('matchSelect').addEventListener('change', applyFiltersAndAggregate);
-    document.getElementById('playerSelect').addEventListener('change', renderHistoryTable);
-}
 
-function updatePlayerSelect(allSummary) {
-    const pSel = document.getElementById('playerSelect');
-    const currentValue = pSel.value;
-    pSel.innerHTML = '<option value="">名前を選択</option>';
-    
-    // プルダウンは棋士を上に、その他を下に配置して全体ソート
-    const sortedPlayers = [...allSummary].sort((a, b) => {
-        if (a.isKishi !== b.isKishi) return a.isKishi ? -1 : 1;
-        let scoreCmp = a.score - b.score;
-        if (scoreCmp !== 0) return scoreCmp;
-        let gameCmp = b.games - a.games;
-        if (gameCmp !== 0) return gameCmp;
-        return a.name.localeCompare(b.name, 'ja');
+    // 💡 戻るボタンのイベント
+    document.getElementById('backToListBtn').addEventListener('click', () => {
+        document.getElementById('history-view').style.display = 'none';
+        document.getElementById('list-view').style.display = 'block';
+        window.scrollTo(0, 0); // 戻った時に一番上へ
     });
-
-    let valueExists = false;
-    sortedPlayers.forEach(p => {
-        pSel.appendChild(new Option(p.name, p.name));
-        if (p.name === currentValue) valueExists = true;
-    });
-
-    if (valueExists) pSel.value = currentValue;
 }
 
 function renderSummaryTable(target) {
@@ -270,15 +248,17 @@ function renderSummaryTable(target) {
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-message">データなし</td></tr>`;
     } else {
         tbody.innerHTML = viewData.map((d, index) => {
+            // 💡 名前をタップ可能なリンクに装飾
+            const nameLink = `<a href="javascript:void(0);" onclick="showHistory('${d.name}')" style="color: #0056b3; text-decoration: underline; font-weight: bold; display: block; padding: 5px 0;">${d.name}</a>`;
             if (target === 'kishi') {
                 return `<tr>
-                    <td>${index + 1}</td><td style="text-align:left; font-weight:bold;">${d.name}</td>
+                    <td>${index + 1}</td><td style="text-align:left;">${nameLink}</td>
                     <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
                     <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
                 </tr>`;
             } else {
                 return `<tr>
-                    <td style="text-align:left; font-weight:bold;">${d.name}</td>
+                    <td style="text-align:left;">${nameLink}</td>
                     <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
                     <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
                 </tr>`;
@@ -292,27 +272,26 @@ function renderSummaryTable(target) {
     });
 }
 
-function renderHistoryTable() {
-    const pSel = document.getElementById('playerSelect');
-    const tbody = document.querySelector('#historyTable tbody');
+// 💡 名前がタップされた時に呼ばれる画面切り替え関数
+window.showHistory = function(playerName) {
+    const pData = playerStats[playerName];
+    if (!pData) return;
+
+    // 画面切り替えと一番上へのスクロール
+    document.getElementById('list-view').style.display = 'none';
+    document.getElementById('history-view').style.display = 'block';
+    window.scrollTo(0, 0); 
+
     const statsCard = document.getElementById('playerStatsCard');
+    const tbody = document.querySelector('#historyTable tbody');
 
-    if (!pSel.value || !playerStats[pSel.value]) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-message">名前を選択してください</td></tr>';
-        statsCard.style.display = "none";
-        return;
-    }
-
-    const pData = playerStats[pSel.value];
-    statsCard.style.display = "block";
-    
     const yearFilter = document.getElementById('yearSelect');
     const matchFilter = document.getElementById('matchSelect');
     const yearText = yearFilter.options[yearFilter.selectedIndex].text;
     const matchText = matchFilter.options[matchFilter.selectedIndex].text;
     
     let rateStr = pData.games > 0 ? (pData.wins / pData.games).toFixed(4) : "-";
-    statsCard.innerHTML = `【${yearText} / ${matchText}】成績： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）`;
+    statsCard.innerHTML = `【${playerName}】<br><span style="font-size: 0.9em; font-weight: normal;">${yearText} / ${matchText}： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）</span>`;
 
     let games = [...pData.history].sort((a,b) => {
         let dA = new Date(a.date.replace(/x/g, '0'));
@@ -324,12 +303,19 @@ function renderHistoryTable() {
         games.map(g => {
             let resColor = (g.result === "☆" || g.result === "□" || g.result === "○") ? "color: #d9534f; font-weight: bold;" : 
                            ((g.result === "★" || g.result === "■" || g.result === "●") ? "color: #0275d8;" : "");
+            
+            // 💡 相手の名前もタップできるようにする（Wikipedia的な回遊）
+            let oppLink = g.opponent;
+            if (playerStats[g.opponent]) {
+                oppLink = `<a href="javascript:void(0);" onclick="showHistory('${g.opponent}')" style="color: #0056b3; text-decoration: underline;">${g.opponent}</a>`;
+            }
+
             return `<tr>
-                <td>${g.date}</td>
+                <td style="white-space: nowrap;">${g.date}</td>
                 <td style="font-weight:bold; text-align:left;">${g.matchStr}</td>
                 <td>${g.mySengo}</td>
-                <td>${g.opponent}</td>
+                <td>${oppLink}</td>
                 <td style="${resColor} font-size:16px;">${g.result}</td>
             </tr>`;
         }).join('');
-}
+};

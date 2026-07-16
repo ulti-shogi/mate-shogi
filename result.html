@@ -70,58 +70,56 @@
         </label>
     </div>
 
-    <!-- 💡 タブを3つに拡張 -->
-    <div class="tabs">
-        <button class="tab-btn active" data-target="panel-summary-kishi">勝敗一覧（棋士のみ）</button>
-        <button class="tab-btn" data-target="panel-summary-others">勝敗一覧（棋士以外）</button>
-        <button class="tab-btn" data-target="panel-history">個人別 対局履歴</button>
-    </div>
-
-    <!-- 💡 棋士のみの表 -->
-    <div id="panel-summary-kishi" class="panel active">
-        <table id="summaryTableKishi">
-            <thead>
-                <tr>
-                    <th class="sortable" data-col="score" data-target="kishi">序列<span class="sort-icon"></span></th>
-                    <th>名前</th>
-                    <th class="sortable" data-col="games" data-target="kishi">対局数<span class="sort-icon"></span></th>
-                    <th class="sortable" data-col="wins" data-target="kishi">勝数<span class="sort-icon"></span></th>
-                    <th class="sortable" data-col="losses" data-target="kishi">負数<span class="sort-icon"></span></th>
-                    <th class="sortable" data-col="winRate" data-target="kishi">勝率<span class="sort-icon"></span></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="6" class="empty-message">データ読み込み中...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- 💡 棋士以外の表 -->
-    <div id="panel-summary-others" class="panel">
-        <table id="summaryTableOthers">
-            <thead>
-                <tr>
-                    <th>名前</th>
-                    <th class="sortable" data-col="games" data-target="others">対局数<span class="sort-icon"></span></th>
-                    <th class="sortable" data-col="wins" data-target="others">勝数<span class="sort-icon"></span></th>
-                    <th class="sortable" data-col="losses" data-target="others">負数<span class="sort-icon"></span></th>
-                    <th class="sortable" data-col="winRate" data-target="others">勝率<span class="sort-icon"></span></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="5" class="empty-message">データ読み込み中...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div id="panel-history" class="panel">
-        <div class="controls" style="justify-content: center;">
-            <label style="font-weight: bold; color: #1a3622; display: flex; align-items: center;">名前：
-                <select id="playerSelect" class="dynamic-select" style="max-width: 200px; margin: 0; display: inline-block;"></select>
-            </label>
+<!-- 💡 1. リスト表示画面（初期表示） -->
+    <div id="list-view">
+        <div class="tabs">
+            <button class="tab-btn active" data-target="panel-summary-kishi">勝敗一覧（棋士のみ）</button>
+            <button class="tab-btn" data-target="panel-summary-others">勝敗一覧（棋士以外）</button>
         </div>
+
+        <div id="panel-summary-kishi" class="panel active">
+            <table id="summaryTableKishi">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-col="score" data-target="kishi">序列<span class="sort-icon"></span></th>
+                        <th>名前</th>
+                        <th class="sortable" data-col="games" data-target="kishi">対局数<span class="sort-icon"></span></th>
+                        <th class="sortable" data-col="wins" data-target="kishi">勝数<span class="sort-icon"></span></th>
+                        <th class="sortable" data-col="losses" data-target="kishi">負数<span class="sort-icon"></span></th>
+                        <th class="sortable" data-col="winRate" data-target="kishi">勝率<span class="sort-icon"></span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" class="empty-message">データ読み込み中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="panel-summary-others" class="panel">
+            <table id="summaryTableOthers">
+                <thead>
+                    <tr>
+                        <th>名前</th>
+                        <th class="sortable" data-col="games" data-target="others">対局数<span class="sort-icon"></span></th>
+                        <th class="sortable" data-col="wins" data-target="others">勝数<span class="sort-icon"></span></th>
+                        <th class="sortable" data-col="losses" data-target="others">負数<span class="sort-icon"></span></th>
+                        <th class="sortable" data-col="winRate" data-target="others">勝率<span class="sort-icon"></span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" class="empty-message">データ読み込み中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 💡 2. 個人履歴表示画面（初期は非表示） -->
+    <div id="history-view" style="display: none;">
+        <button id="backToListBtn" style="margin-bottom: 15px; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 6px; border: 1px solid #ccc; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            ← 一覧に戻る
+        </button>
         
-        <div id="playerStatsCard" style="background-color: #f0ebd8; padding: 10px; margin: 15px 0; border-radius: 6px; text-align: center; font-weight: bold; color: #1a3622; display: none;">
+        <div id="playerStatsCard" style="background-color: #f0ebd8; padding: 12px; margin-bottom: 15px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 1.1em; color: #1a3622;">
         </div>
 
         <table id="historyTable">
@@ -135,12 +133,9 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td colspan="5" class="empty-message">名前を選択してください</td></tr>
             </tbody>
         </table>
     </div>
-
-</div>
 
 <script src="result.js"></script>
 </body>
