@@ -412,3 +412,18 @@ footer {
         display: none;
     }
 }
+
+/* ⬇⬇ スマホ表示時の余白を削ってテーブルを広げる設定 ⬇⬇ */
+@media (max-width: 599.98px) {
+    body {
+        padding: 5px; /* 全体の余白を少し減らす */
+    }
+    .container {
+        padding: 15px 5px; /* 白地の箱の「左右の余白」を20pxから5pxに減らす */
+        border-radius: 4px; /* スマホ用に角丸も少し小さくして自然に */
+    }
+    /* テーブル内の余白も少しだけ詰める */
+    th, td {
+        padding: 6px 2px; 
+    }
+}
