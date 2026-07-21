@@ -413,17 +413,28 @@ footer {
     }
 }
 
-/* ⬇⬇ スマホ表示時の余白を削ってテーブルを広げる設定 ⬇⬇ */
+/* ⬇⬇ 【修正版】テーブルだけを白地いっぱいに広げる（スマホ用） ⬇⬇ */
 @media (max-width: 599.98px) {
-    body {
-        padding: 5px; /* 全体の余白を少し減らす */
+    /* 1. 勝敗一覧（パネル）を左右に20pxずつ引っ張り出して余白を打ち消す */
+    .panel {
+        margin-left: -20px;
+        margin-right: -20px;
     }
-    .container {
-        padding: 15px 5px; /* 白地の箱の「左右の余白」を20pxから5pxに減らす */
-        border-radius: 4px; /* スマホ用に角丸も少し小さくして自然に */
+    
+    /* 2. 対局履歴テーブルも同様に左右に20px引っ張り出す */
+    #historyTable {
+        width: calc(100% + 40px);
+        margin-left: -20px;
+        margin-right: -20px;
     }
-    /* テーブル内の余白も少しだけ詰める */
-    th, td {
-        padding: 6px 2px; 
+
+    /* 3. テーブルが画面端にピタッとつくので、一番外側の縦線を消してスッキリさせる */
+    th:first-child, td:first-child { 
+        border-left: none; 
+        padding-left: 10px; /* 左端の文字がくっつきすぎないように少し内側に余白 */
+    }
+    th:last-child, td:last-child { 
+        border-right: none; 
+        padding-right: 10px; 
     }
 }
