@@ -32,6 +32,8 @@ window.addEventListener('DOMContentLoaded', () => {
         setupKishiMap(kishiText, profileText);
         parseAllGames(gameTexts);
         
+        setupYearSelect(); // 💡 新規追加：データから年度を自動抽出してプルダウンを作る
+        
         setupUI();
         applyFiltersAndAggregate(); 
     });
@@ -104,7 +106,7 @@ function parseAllGames(gameTexts) {
             if (match) matchDetailStr += `${match} `;
             if (phase) matchDetailStr += `${phase} `;
             if (detail) matchDetailStr += `${detail} `;
-            if (notes && notes !== "なし") matchDetailStr += ` ${notes}`; // 💡 カッコを削除
+            if (notes && notes !== "なし") matchDetailStr += ` ${notes}`; // カッコ外し反映済み
             matchDetailStr = matchDetailStr.replace(/\s+/g, ' ').trim();
 
             allGameRecords.push({
@@ -115,6 +117,44 @@ function parseAllGames(gameTexts) {
                 p2_sengo: row[headers['B']]?.trim() || "", p2_res: row[headers['b']]?.trim() || ""
             });
         }
+    });
+}
+
+// 💡 共通関数：日付文字列から「年度」を計算する
+function getNendo(dateStr) {
+    if (!dateStr || !dateStr.includes('-')) return null;
+    let parts = dateStr.split('-');
+    let y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+    if (isNaN(y)) return null;
+    if (isNaN(m)) return y; // 月がxxなどの場合は暫定でその年を年度とする
+    return m <= 3 ? y - 1 : y; // 1〜3月は前年度
+}
+
+// 💡 新規追加：全データから存在する年度を抽出してプルダウンを生成する
+function setupYearSelect() {
+    const yearSet = new Set();
+    
+    // 全対局データから年度を拾い集める
+    allGameRecords.forEach(g => {
+        const nendo = getNendo(g.date);
+        if (nendo !== null) {
+            yearSet.add(nendo);
+        }
+    });
+
+    // 年度の数字が大きい順（新しい順）に並び替え
+    const sortedYears = Array.from(yearSet).sort((a, b) => b - a);
+    
+    const yearSelect = document.getElementById('yearSelect');
+    yearSelect.innerHTML = '<option value="all">全期間</option>'; // 中身をリセット
+    
+    // 抽出した年度をoptionとして追加
+    sortedYears.forEach((year, index) => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.text = `${year}年度`;
+        if (index === 0) option.selected = true; // 自動的に一番新しい年度を選択状態にする
+        yearSelect.appendChild(option);
     });
 }
 
@@ -132,15 +172,6 @@ function applyFiltersAndAggregate() {
             playerStats[name] = { name: name, score: score, isKishi: isKishi, games: 0, wins: 0, losses: 0, history: [] };
         }
         return true;
-    }
-
-    function getNendo(dateStr) {
-        if (!dateStr || !dateStr.includes('-')) return null;
-        let parts = dateStr.split('-');
-        let y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
-        if (isNaN(y)) return null;
-        if (isNaN(m)) return y; 
-        return m <= 3 ? y - 1 : y;
     }
 
     const validRes = ['☆', '★', '□', '■', '○', '●'];
@@ -177,7 +208,6 @@ function applyFiltersAndAggregate() {
     renderSummaryTable('kishi');
     renderSummaryTable('others');
 
-    // 💡 絞り込みが変わったら必ずリスト画面に戻す
     document.getElementById('list-view').style.display = 'block';
     document.getElementById('history-view').style.display = 'none';
 }
@@ -211,11 +241,10 @@ function setupUI() {
     document.getElementById('yearSelect').addEventListener('change', applyFiltersAndAggregate);
     document.getElementById('matchSelect').addEventListener('change', applyFiltersAndAggregate);
 
-    // 💡 戻るボタンのイベント
     document.getElementById('backToListBtn').addEventListener('click', () => {
         document.getElementById('history-view').style.display = 'none';
         document.getElementById('list-view').style.display = 'block';
-        window.scrollTo(0, 0); // 戻った時に一番上へ
+        window.scrollTo(0, 0); 
     });
 }
 
@@ -248,7 +277,6 @@ function renderSummaryTable(target) {
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-message">データなし</td></tr>`;
     } else {
         tbody.innerHTML = viewData.map((d, index) => {
-            // 💡 名前をタップ可能なリンクに装飾
             const nameLink = `<a href="javascript:void(0);" onclick="showHistory('${d.name}')" style="color: #0056b3; text-decoration: underline; font-weight: bold; display: block; padding: 5px 0;">${d.name}</a>`;
             if (target === 'kishi') {
                 return `<tr>
@@ -272,12 +300,10 @@ function renderSummaryTable(target) {
     });
 }
 
-// 💡 名前がタップされた時に呼ばれる画面切り替え関数
 window.showHistory = function(playerName) {
     const pData = playerStats[playerName];
     if (!pData) return;
 
-    // 画面切り替えと一番上へのスクロール
     document.getElementById('list-view').style.display = 'none';
     document.getElementById('history-view').style.display = 'block';
     window.scrollTo(0, 0); 
@@ -304,7 +330,6 @@ window.showHistory = function(playerName) {
             let resColor = (g.result === "☆" || g.result === "□" || g.result === "○") ? "color: #d9534f; font-weight: bold;" : 
                            ((g.result === "★" || g.result === "■" || g.result === "●") ? "color: #0275d8;" : "");
             
-            // 💡 相手の名前もタップできるようにする（Wikipedia的な回遊）
             let oppLink = g.opponent;
             if (playerStats[g.opponent]) {
                 oppLink = `<a href="javascript:void(0);" onclick="showHistory('${g.opponent}')" style="color: #0056b3; text-decoration: underline;">${g.opponent}</a>`;
