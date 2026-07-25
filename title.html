@@ -6,61 +6,19 @@
     <title>将棋の殿堂 - タイトル獲得ランキング</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 🏆 タイトル獲得ランキングページ専用の追加スタイル */
-        .top-nav {
-            margin-bottom: 20px;
-        }
-        .back-link {
-            color: #1a3622;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .back-link:hover {
-            color: #cba135;
-        }
-        .rank-badge {
-            display: inline-block;
-            min-width: 28px;
-            padding: 2px 6px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 12px;
-        }
-        .rank-1 { background-color: #ffd700; color: #1a3622; } /* 金 */
-        .rank-2 { background-color: #c0c0c0; color: #1a3622; } /* 銀 */
-        .rank-3 { background-color: #e69d45; color: #fff; }    /* 銅 */
+        .top-nav { margin-bottom: 20px; }
+        .back-link { color: #1a3622; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; gap: 5px; }
+        .back-link:hover { color: #cba135; }
+        .rank-badge { display: inline-block; min-width: 28px; padding: 2px 6px; border-radius: 12px; font-weight: bold; font-size: 12px; }
+        .rank-1 { background-color: #ffd700; color: #1a3622; }
+        .rank-2 { background-color: #c0c0c0; color: #1a3622; }
+        .rank-3 { background-color: #e69d45; color: #fff; }
         .rank-other { background-color: #f0ebd8; color: #333; }
-
-        .total-col {
-            font-weight: bold;
-            background-color: #faf7ed;
-            color: #1a3622;
-        }
-
-        .filter-select {
-            padding: 10px;
-            font-size: 15px;
-            border: 2px solid #cba135;
-            border-radius: 5px;
-            background-color: #fff;
-            color: #1a3622;
-            cursor: pointer;
-        }
-
-        /* スマートフォン表示調整（600px未満） */
+        .total-col { font-weight: bold; background-color: #faf7ed; color: #1a3622; }
+        .filter-select { padding: 10px; font-size: 15px; border: 2px solid #cba135; border-radius: 5px; background-color: #fff; color: #1a3622; cursor: pointer; }
         @media (max-width: 599.98px) {
-            /* スマホ時は内訳タイトルの重要度の低い列を一部非表示にして見やすく調整 */
-            .title-sub-col {
-                display: none;
-            }
-            th, td {
-                padding: 8px 3px;
-                font-size: 12px;
-            }
+            .title-sub-col { display: none; }
+            th, td { padding: 8px 3px; font-size: 12px; }
         }
     </style>
 </head>
@@ -105,7 +63,7 @@
                     <th class="sortable title-sub-col" onclick="sortTable('王位')">王位 <span id="sort_王位">↕</span></th>
                     <th class="sortable title-sub-col" onclick="sortTable('王座')">王座 <span id="sort_王座">↕</span></th>
                     <th class="sortable title-sub-col" onclick="sortTable('棋王')">棋王 <span id="sort_棋王">↕</span></th>
-                    <th class="sortable title-sub-col" onclick="sortTable('王将')">王将 <span id="sort_王首">↕</span></th>
+                    <th class="sortable title-sub-col" onclick="sortTable('王将')">王将 <span id="sort_王将">↕</span></th>
                     <th class="sortable title-sub-col" onclick="sortTable('棋聖')">棋聖 <span id="sort_棋聖">↕</span></th>
                     <th class="sortable title-sub-col" onclick="sortTable('叡王')">叡王 <span id="sort_叡王">↕</span></th>
                 </tr>
@@ -125,56 +83,47 @@
 </footer>
 
 <script>
-    // 8大タイトルの定義
     const TITLE_LIST = ["竜王", "名人", "王位", "王座", "棋王", "王将", "棋聖", "叡王"];
-
-    // 棋士データの集計保持用
-    let kishiStats = {}; // { "藤井聡太": { total: 10, titles: { "名人": 3, ... } } }
-    let aggregatedList = []; // ソート・フィルター用の配列
+    let kishiStats = {};
+    let aggregatedList = [];
     let currentSortKey = 'total';
-    let currentSortAsc = false; // デフォルトは降順
+    let currentSortAsc = false;
 
-    // ページロード時にCSVを読み込む
     window.addEventListener('DOMContentLoaded', () => {
         loadTitleData();
     });
 
     async function loadTitleData() {
         try {
-            // 対局結果テキストファイルの取得
+            // パス修正（同階層のファイルを取得）
             const response = await fetch('タイトル戦対局結果.txt');
             if (!response.ok) {
-                throw new Error('ファイルの読み込みに失敗しました。');
+                throw new Error(`ファイルが見つかりません (Status: ${response.status})。リポジトリ上のファイル名と一致しているか確認してください。`);
             }
             const textData = await response.text();
             processCSV(textData);
         } catch (error) {
             console.error(error);
             document.getElementById('tableBody').innerHTML = 
-                `<tr><td colspan="11" class="empty-message" style="color:red;">データの読み込みに失敗しました (${error.message})</td></tr>`;
+                `<tr><td colspan="11" class="empty-message" style="color:red; padding: 20px;">⚠️ エラー: ${error.message}</td></tr>`;
         }
     }
 
-    // CSVパースおよびタイトル獲得者判定ロジック
     function processCSV(csvText) {
-        const lines = csvText.trim().split('\n');
-        const seriesMap = {}; // 番勝負単位での勝ち星管理マップ
+        const lines = csvText.split(/\r?\n/);
+        const seriesMap = {};
 
-        lines.forEach(line => {
+        lines.forEach((line, index) => {
             line = line.trim();
-            // コメント行やヘッダー行、空行のスキップ
-            if (!line || line.startsWith('.trim();       // 期数（例: 84）
-            const rawMatch = cols[1].trim();     // 棋戦名（例: 名人戦）
-            const phase = cols[2].trim();        // 七番勝負 / 五番勝負
-            const playerA = cols[7].trim();      // 対局者A
-            const resultA = cols[8].trim();      // Aの勝敗記号 (☆ / ★ / 千 / 持 / ―)
-            const resultB = cols[9].trim();      // Bの勝敗記号
-            const playerB = cols[10].trim();     // 対局者B
+            if (!line || line.startsWith('.trim();       // 0: period
+            const rawMatch = cols[1].trim();     // 1: match (例: 名人戦)
+            const phase = cols[2].trim();        // 2: phase (例: 七番勝負)
+            const playerA = cols[7].trim();      // 7: player_A
+            const resultA = cols[8].trim();      // 8: a (☆/★)
+            const resultB = cols[9].trim();      // 9: b (☆/★)
+            const playerB = cols[10].trim();     // 10: player_B
 
-            // タイトル名（「戦」を除く）
             const titleName = rawMatch.replace('戦', '');
-
-            // 番勝負を一義的に特定するキー（例: "84_名人"）
             const seriesKey = `${period}_${titleName}`;
 
             if (!seriesMap[seriesKey]) {
@@ -189,61 +138,44 @@
             if (!seriesMap[seriesKey].wins[playerA]) seriesMap[seriesKey].wins[playerA] = 0;
             if (!seriesMap[seriesKey].wins[playerB]) seriesMap[seriesKey].wins[playerB] = 0;
 
-            // 勝ち星のカウント
-            if (resultA === '☆') {
-                seriesMap[seriesKey].wins[playerA]++;
-            }
-            if (resultB === '☆') {
-                seriesMap[seriesKey].wins[playerB]++;
-            }
+            if (resultA === '☆') seriesMap[seriesKey].wins[playerA]++;
+            if (resultB === '☆') seriesMap[seriesKey].wins[playerB]++;
         });
 
-        // 獲得タイトルの集計処理
         kishiStats = {};
 
         Object.values(seriesMap).forEach(series => {
-            // 七番勝負は4勝、五番勝負は3勝で決着
             const requiredWins = series.phase.includes('七番勝負') ? 4 : 3;
             
             Object.entries(series.wins).forEach(([player, winCount]) => {
                 if (winCount >= requiredWins) {
-                    // タイトル獲得確定！
                     if (!kishiStats[player]) {
-                        kishiStats[player] = {
-                            name: player,
-                            total: 0,
-                            titles: {}
-                        };
+                        kishiStats[player] = { name: player, total: 0, titles: {} };
                         TITLE_LIST.forEach(t => kishiStats[player].titles[t] = 0);
                     }
-
                     kishiStats[player].titles[series.titleName] = (kishiStats[player].titles[series.titleName] || 0) + 1;
                     kishiStats[player].total++;
                 }
             });
         });
 
-        // 配列化
         aggregatedList = Object.values(kishiStats);
+        
+        if (aggregatedList.length === 0) {
+            document.getElementById('tableBody').innerHTML = 
+                `<tr><td colspan="11" class="empty-message">データが集計されませんでした。TXTファイルの形式を確認してください。</td></tr>`;
+            return;
+        }
 
-        // 初期表示（通算獲得数の降順）
         sortTable('total', false);
     }
 
-    // テーブルの描画
     function renderTable(data) {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
 
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="11" class="empty-message">該当するデータがありません。</td></tr>';
-            return;
-        }
-
-        data.forEach((item, index) => {
+        data.forEach((item) => {
             const tr = document.createElement('tr');
-
-            // 順位バッジの設定
             let rankClass = 'rank-other';
             if (item.rank === 1) rankClass = 'rank-1';
             else if (item.rank === 2) rankClass = 'rank-2';
@@ -266,33 +198,24 @@
         });
     }
 
-    // 絞り込み検索処理
     function filterData() {
         const searchText = document.getElementById('searchInput').value.trim().toLowerCase();
         const selectedTitle = document.getElementById('titleFilter').value;
 
         let filtered = aggregatedList.filter(item => {
-            // 名前検索
             const matchesName = item.name.toLowerCase().includes(searchText);
-
-            // タイトル選択フィルター
             let matchesTitle = true;
             if (selectedTitle !== 'ALL') {
                 matchesTitle = (item.titles[selectedTitle] && item.titles[selectedTitle] > 0);
             }
-
             return matchesName && matchesTitle;
         });
 
-        // 順位の再割り当て（通算数が同じなら同順位）
         assignRanks(filtered);
-
         renderTable(filtered);
     }
 
-    // 順位計算（同数の場合は同順位とする）
     function assignRanks(list) {
-        // 通算獲得順で並んでいる前提で順位付け
         let currentRank = 1;
         list.forEach((item, index) => {
             if (index > 0 && item.total < list[index - 1].total) {
@@ -302,65 +225,38 @@
         });
     }
 
-    // ソート処理
     function sortTable(key, toggle = true) {
         if (toggle) {
-            if (currentSortKey === key) {
-                currentSortAsc = !currentSortAsc;
-            } else {
-                currentSortKey = key;
-                currentSortAsc = false; // 新しいキー選択時は降順をデフォルトに
-            }
+            if (currentSortKey === key) { currentSortAsc = !currentSortAsc; } 
+            else { currentSortKey = key; currentSortAsc = false; }
         } else {
             currentSortKey = key;
             currentSortAsc = false;
         }
 
-        // ソート矢印の更新
         document.querySelectorAll('th span').forEach(span => span.textContent = '↕');
         const activeSpan = document.getElementById(`sort_${key}`);
-        if (activeSpan) {
-            activeSpan.textContent = currentSortAsc ? '▲' : '▼';
-        }
+        if (activeSpan) { activeSpan.textContent = currentSortAsc ? '▲' : '▼'; }
 
         aggregatedList.sort((a, b) => {
             let valA, valB;
+            if (key === 'rank' || key === 'total') { valA = a.total; valB = b.total; } 
+            else if (key === 'name') { return currentSortAsc ? a.name.localeCompare(b.name, 'ja') : b.name.localeCompare(a.name, 'ja'); } 
+            else { valA = a.titles[key] || 0; valB = b.titles[key] || 0; }
 
-            if (key === 'rank' || key === 'total') {
-                valA = a.total;
-                valB = b.total;
-            } else if (key === 'name') {
-                valA = a.name;
-                valB = b.name;
-                return currentSortAsc ? valA.localeCompare(valB, 'ja') : valB.localeCompare(valA, 'ja');
-            } else {
-                // 各個別タイトル数
-                valA = a.titles[key] || 0;
-                valB = b.titles[key] || 0;
-            }
-
-            if (valA === valB) {
-                // サブソート：通算獲得数
-                return b.total - a.total;
-            }
-
+            if (valA === valB) return b.total - a.total;
             return currentSortAsc ? valA - valB : valB - valA;
         });
 
-        // 順位の更新
         assignRanks(aggregatedList);
-
-        // フィルター適用後の再描画
         filterData();
     }
 
-    // XSS対策用エスケープ関数
     function escapeHtml(str) {
         return str.replace(/[&<>"']/g, function(m) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
         });
     }
 </script>
-
 </body>
 </html>
