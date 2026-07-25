@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>将棋の殿堂 - 歴代タイトル獲得ランキング</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:,">
 </head>
 <body>
 
@@ -35,8 +36,7 @@
                 <th class="tablet-col pc-col">獲得タイトル内訳</th>
             </tr>
         </thead>
-        <tbody id="tableBody">
-            </tbody>
+        <tbody id="tableBody"></tbody>
     </table>
     
     <div id="emptyMessage" class="empty-message" style="display: none; padding: 20px;">
@@ -49,20 +49,18 @@
 </footer>
 
 <script>
-// 小数点第4位まで切り捨て（四捨五入なし）の関数
+// 小数点第4位まで切り捨て（四捨五入なし）
 function floorTo4Decimal(num) {
     if (isNaN(num) || num === 0) return "0.0000";
-    // 浮動小数点の誤差対策として文字列で処理
     const str = num.toString();
     const dotIndex = str.indexOf('.');
     if (dotIndex === -1) return num.toFixed(4);
     return (str + "0000").substring(0, dotIndex + 5);
 }
 
-// データの非同期読み込みと集計メインロジック
+// データ読み込みと集計メインロジック
 async function initRanking() {
     try {
-        // ※ 本番のCSVファイル名に合わせて調整してください
         const response = await fetch('タイトル戦対局結果.txt');
         if (!response.ok) throw new Error('ファイルの読み込みに失敗しました');
         
@@ -70,14 +68,14 @@ async function initRanking() {
         const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
         if (lines.length < 2) return;
 
-        // 1. ヘッダー行から列名とインデックスのマッピングを作成（列位置に依存しない）
+        // 1. ヘッダー列名とインデックスのマッピング
         const header = lines[0].split(',');
         const colMap = {};
         header.forEach((colName, index) => {
             colMap[colName.trim()] = index;
         });
 
-        // 必須列名の存在チェック
+        // 必須列の存在確認
         const requiredCols = ['the', 'match', 'phase', 'player_A', 'player_B', 'a', 'b'];
         for (const col of requiredCols) {
             if (colMap[col] === undefined) {
@@ -86,28 +84,26 @@ async function initRanking() {
             }
         }
 
-        // 2. 対局データをパースして番勝負（シリーズ）ごとに集約
+        // 2. 対局データを番勝負ごとに集約
         const seriesData = {};
 
         for (let i = 1; i < lines.length; i++) {
             // コメント行やソース行のスキップ
             if (lines[i].startsWith('.split(',');
-            const match = cells[colMap['match']]?.trim();
-            const the = cells[colMap['the']]?.trim();
-            const phase = cells[colMap['phase']]?.trim();
-            const playerA = cells[colMap['player_A']]?.trim();
-            const playerB = cells[colMap['player_B']]?.trim();
-            const resultA = cells[colMap['a']]?.trim();
-            const resultB = cells[colMap['b']]?.trim();
+            const match = cells[colMap['match']] ? cells[colMap['match']].trim() : "";
+            const the = cells[colMap['the']] ? cells[colMap['the']].trim() : "";
+            const phase = cells[colMap['phase']] ? cells[colMap['phase']].trim() : "";
+            const playerA = cells[colMap['player_A']] ? cells[colMap['player_A']].trim() : "";
+            const playerB = cells[colMap['player_B']] ? cells[colMap['player_B']].trim() : "";
+            const resultA = cells[colMap['a']] ? cells[colMap['a']].trim() : "";
+            const resultB = cells[colMap['b']] ? cells[colMap['b']].trim() : "";
 
             if (!match || !the || !playerA || !playerB || playerB === "未定") continue;
 
-            // シリーズを識別するユニークキー (例: "84-名人戦")
-            const seriesKey = `${the}-${match}`;
+            const seriesKey = the + "-" + match;
 
             if (!seriesData[seriesKey]) {
-                // 番勝負に応じた既定勝利数の判定
-                let requiredWins = 4; // 七番勝負をデフォルトに
+                let requiredWins = 4;
                 if (phase && (phase.includes('五番勝負') || phase.includes('5番勝負'))) {
                     requiredWins = 3;
                 }
@@ -124,7 +120,6 @@ async function initRanking() {
                 };
             }
 
-            // 有効な勝敗のみカウント（千日手・持将棋・未来スケジュールは除外）
             if (resultA === '☆') {
                 seriesData[seriesKey].winsA++;
                 seriesData[seriesKey].hasStarted = true;
@@ -132,11 +127,11 @@ async function initRanking() {
                 seriesData[seriesKey].winsB++;
                 seriesData[seriesKey].hasStarted = true;
             } else if (resultA === '★' || resultB === '★') {
-                seriesData[seriesKey].hasStarted = true; // 結果が出ているなら開始済み
+                seriesData[seriesKey].hasStarted = true;
             }
         }
 
-        // 3. 棋士ごとのスタッツ（獲得・登場・敗北）を集計
+        // 3. 棋士ごとの獲得・登場・敗北数の集計
         const kishiStats = {};
 
         function getOrCreateKishi(name) {
@@ -146,7 +141,7 @@ async function initRanking() {
                     titleCount: 0,
                     appearCount: 0,
                     loseCount: 0,
-                    titles: {} // 棋戦ごとの内訳 { "名人戦": 2, "竜王戦": 1 }
+                    titles: {}
                 };
             }
             return kishiStats[name];
@@ -157,7 +152,6 @@ async function initRanking() {
             const isFinishedB = s.winsB >= s.requiredWins;
             const isFinished = isFinishedA || isFinishedB;
 
-            // シリーズが決定している、もしくは進行中の場合のみ「登場」とみなす
             if (isFinished || s.hasStarted) {
                 const pA = getOrCreateKishi(s.playerA);
                 const pB = getOrCreateKishi(s.playerB);
@@ -179,9 +173,8 @@ async function initRanking() {
             }
         });
 
-        // 4. 配列への変換と獲得率（勝率）の計算
+        // 4. 配列変換と勝率計算
         let rankingArray = Object.values(kishiStats).map(k => {
-            // 獲得率 = 獲得数 ÷ 登場回数
             const winRate = k.appearCount > 0 ? (k.titleCount / k.appearCount) : 0;
             return {
                 ...k,
@@ -189,11 +182,8 @@ async function initRanking() {
             };
         });
 
-        // デフォルトのソート（獲得数降順、同数の場合は登場回数降順）
         sortData(rankingArray, 'titleCount', 'desc');
         renderTable(rankingArray);
-
-        // イベントリスナーの設定（検索・ソート）
         setupControls(rankingArray);
 
     } catch (error) {
@@ -201,7 +191,7 @@ async function initRanking() {
     }
 }
 
-// テーブルへのレンダリング処理
+// テーブル描画
 function renderTable(data) {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
@@ -212,10 +202,9 @@ function renderTable(data) {
     }
     document.getElementById('emptyMessage').style.display = 'none';
 
-    data.forEach((k, index) => {
-        // 内訳文字列の構築 (例: "名人(2) 竜王(1)")
+    data.forEach((k) => {
         const titleDetails = Object.entries(k.titles)
-            .map(([match, count]) => `${match.replace('戦', '')}(${count})`)
+            .map(([match, count]) => match.replace('戦', '') + '(' + count + ')')
             .join(' ');
 
         const tr = document.createElement('tr');
@@ -232,13 +221,12 @@ function renderTable(data) {
     });
 }
 
-// データのソート関数（同順位判定ロジック含む）
+// ソート・同順位付け処理
 function sortData(data, field, direction) {
     data.sort((a, b) => {
         let valA = a[field];
         let valB = b[field];
 
-        // 獲得率・獲得数・登場数で同値の場合の第2セカンダリソートは名前順
         if (valA === valB) {
             return a.name.localeCompare(b.name, 'ja');
         }
@@ -246,7 +234,6 @@ function sortData(data, field, direction) {
         return direction === 'asc' ? valA - valB : valB - valA;
     });
 
-    // 順位（同率順位）の再計算（獲得数ベース）
     let currentRank = 1;
     data.forEach((item, index) => {
         if (index > 0 && data[index - 1][field] !== item[field] && direction === 'desc') {
@@ -256,7 +243,7 @@ function sortData(data, field, direction) {
     });
 }
 
-// コントロール系（UIイベント）の制御
+// イベントリスナー設定
 function setupControls(allData) {
     const searchInput = document.getElementById('searchInput');
     const sortSelect = document.getElementById('sortSelect');
@@ -265,21 +252,15 @@ function setupControls(allData) {
     function filterAndSort() {
         const query = searchInput.value.trim();
         let filtered = allData.filter(k => k.name.includes(query));
-
-        // セレクトボックスまたはヘッダーの選択状態からソート条件を取得
         const [field, direction] = sortSelect.value.split('-');
         sortData(filtered, field, direction);
         renderTable(filtered);
     }
 
-    // 検索入力イベント
     searchInput.addEventListener('input', filterAndSort);
 
-    // セレクトボックス変更イベント
     sortSelect.addEventListener('change', (e) => {
         const [field, direction] = e.target.value.split('-');
-        
-        // テーブルヘッダーのクラス表示も同期させる
         thList.forEach(th => {
             th.classList.remove('asc', 'desc');
             if (th.dataset.sort === field) {
@@ -289,7 +270,6 @@ function setupControls(allData) {
         filterAndSort();
     });
 
-    // テーブルヘッダークリックによるソート機能
     thList.forEach(th => {
         th.addEventListener('click', () => {
             const field = th.dataset.sort;
@@ -301,19 +281,15 @@ function setupControls(allData) {
                 direction = 'desc';
             }
 
-            // ヘッダークラスの更新
             thList.forEach(h => h.classList.remove('asc', 'desc'));
             th.classList.add(direction);
-
-            // セレクトボックス側の選択値も同期
-            sortSelect.value = `${field}-${direction}`;
+            sortSelect.value = field + '-' + direction;
 
             filterAndSort();
         });
     });
 }
 
-// ページ読み込み時に実行
 document.addEventListener('DOMContentLoaded', initRanking);
 </script>
 </body>
