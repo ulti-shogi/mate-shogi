@@ -421,10 +421,8 @@ footer {
         margin-right: -20px;
     }
     
-    /* 2. 対局履歴テーブルと歴代タイトル獲得ランキングテーブルを左右に20px引っ張り出す */
-    /* ❌ 修正前: #historyTable { */
-    /* ⭕ 修正後: カンマ区切りで #titleTable を追加 */
-    #historyTable, #titleTable {
+    /* 2. 対局履歴テーブルを左右に20px引っ張り出す */
+    #historyTable {
         width: calc(100% + 40px);
         margin-left: -20px;
         margin-right: -20px;
