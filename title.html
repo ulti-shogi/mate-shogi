@@ -1,295 +1,230 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>将棋の殿堂 - 歴代タイトル獲得ランキング</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="data:,">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>将棋の殿堂 - 歴代タイトル獲得ランキング</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:,">
 </head>
 <body>
-
 <div class="header-section">
-    <h1>歴代タイトル獲得ランキング</h1>
-    <p class="subtitle">公式タイトル戦の全対局結果から、各棋士の獲得・登場回数および勝率を自動集計</p>
+<h1>歴代タイトル獲得ランキング</h1>
+<p class="subtitle">公式タイトル戦の全対局結果から、各棋士の獲得・登場回数および勝率を自動集計</p>
 </div>
-
 <div class="container">
-    <div class="controls">
-        <input type="text" id="searchInput" placeholder="棋士名で検索...">
-        <select id="sortSelect" class="dynamic-select">
-            <option value="titleCount-desc">獲得数 (多度順)</option>
-            <option value="appearCount-desc">登場回数 (多度順)</option>
-            <option value="winRate-desc">獲得率 (高順)</option>
-        </select>
-    </div>
-
-    <table id="titleTable">
-        <thead>
-            <tr>
-                <th class="sortable asc" data-sort="rank">順位<div class="sort-icon"></div></th>
-                <th class="sortable" data-sort="name">棋士名<div class="sort-icon"></div></th>
-                <th class="sortable" data-sort="titleCount">獲得数<div class="sort-icon"></div></th>
-                <th class="sortable" data-sort="appearCount">登場回数<div class="sort-icon"></div></th>
-                <th class="sortable pc-col" data-sort="loseCount">敗北数<div class="sort-icon"></div></th>
-                <th class="sortable" data-sort="winRate">獲得率<div class="sort-icon"></div></th>
-                <th class="tablet-col pc-col">獲得タイトル内訳</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
-    
-    <div id="emptyMessage" class="empty-message" style="display: none; padding: 20px;">
-        該当する棋士が見つかりません。
-    </div>
+<div class="controls">
+<input type="text" id="searchInput" placeholder="棋士名で検索...">
+<select id="sortSelect" class="dynamic-select">
+<option value="titleCount-desc">獲得数 (多度順)</option>
+<option value="appearCount-desc">登場回数 (多度順)</option>
+<option value="winRate-desc">獲得率 (高順)</option>
+</select>
 </div>
-
+<table id="titleTable">
+<thead>
+<tr>
+<th class="sortable asc" data-sort="rank">順位<div class="sort-icon"></div></th>
+<th class="sortable" data-sort="name">棋士名<div class="sort-icon"></div></th>
+<th class="sortable" data-sort="titleCount">獲得数<div class="sort-icon"></div></th>
+<th class="sortable" data-sort="appearCount">登場回数<div class="sort-icon"></div></th>
+<th class="sortable pc-col" data-sort="loseCount">敗北数<div class="sort-icon"></div></th>
+<th class="sortable" data-sort="winRate">獲得率<div class="sort-icon"></div></th>
+<th class="tablet-col pc-col">獲得タイトル内訳</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+<div id="emptyMessage" class="empty-message" style="display: none; padding: 20px;">
+該当する棋士が見つかりません。
+</div>
+</div>
 <footer>
-    <p>&copy; 2026 将棋の殿堂</p>
+<p>&copy; 2026 将棋の殿堂</p>
 </footer>
-
 <script>
-// 小数点第4位まで切り捨て（四捨五入なし）
 function floorTo4Decimal(num) {
-    if (isNaN(num) || num === 0) return "0.0000";
-    const str = num.toString();
-    const dotIndex = str.indexOf('.');
-    if (dotIndex === -1) return num.toFixed(4);
-    return (str + "0000").substring(0, dotIndex + 5);
+if (isNaN(num) || num === 0) return "0.0000";
+var str = num.toString();
+var dotIndex = str.indexOf('.');
+if (dotIndex === -1) return num.toFixed(4);
+return (str + "0000").substring(0, dotIndex + 5);
 }
-
-// データ読み込みと集計メインロジック
 async function initRanking() {
-    try {
-        const response = await fetch('タイトル戦対局結果.txt');
-        if (!response.ok) throw new Error('ファイルの読み込みに失敗しました');
-        
-        const text = await response.text();
-        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-        if (lines.length < 2) return;
-
-        // 1. ヘッダー列名とインデックスのマッピング
-        const header = lines[0].split(',');
-        const colMap = {};
-        header.forEach((colName, index) => {
-            colMap[colName.trim()] = index;
-        });
-
-        // 必須列の存在確認
-        const requiredCols = ['the', 'match', 'phase', 'player_A', 'player_B', 'a', 'b'];
-        for (const col of requiredCols) {
-            if (colMap[col] === undefined) {
-                console.error(`必須列 "${col}" がCSVに見つかりません。`);
-                return;
-            }
-        }
-
-        // 2. 対局データを番勝負ごとに集約
-        const seriesData = {};
-
-        for (let i = 1; i < lines.length; i++) {
-            // コメント行やソース行のスキップ
-            if (lines[i].startsWith('.split(',');
-            const match = cells[colMap['match']] ? cells[colMap['match']].trim() : "";
-            const the = cells[colMap['the']] ? cells[colMap['the']].trim() : "";
-            const phase = cells[colMap['phase']] ? cells[colMap['phase']].trim() : "";
-            const playerA = cells[colMap['player_A']] ? cells[colMap['player_A']].trim() : "";
-            const playerB = cells[colMap['player_B']] ? cells[colMap['player_B']].trim() : "";
-            const resultA = cells[colMap['a']] ? cells[colMap['a']].trim() : "";
-            const resultB = cells[colMap['b']] ? cells[colMap['b']].trim() : "";
-
-            if (!match || !the || !playerA || !playerB || playerB === "未定") continue;
-
-            const seriesKey = the + "-" + match;
-
-            if (!seriesData[seriesKey]) {
-                let requiredWins = 4;
-                if (phase && (phase.includes('五番勝負') || phase.includes('5番勝負'))) {
-                    requiredWins = 3;
-                }
-
-                seriesData[seriesKey] = {
-                    match: match,
-                    the: the,
-                    playerA: playerA,
-                    playerB: playerB,
-                    winsA: 0,
-                    winsB: 0,
-                    requiredWins: requiredWins,
-                    hasStarted: false
-                };
-            }
-
-            if (resultA === '☆') {
-                seriesData[seriesKey].winsA++;
-                seriesData[seriesKey].hasStarted = true;
-            } else if (resultB === '☆') {
-                seriesData[seriesKey].winsB++;
-                seriesData[seriesKey].hasStarted = true;
-            } else if (resultA === '★' || resultB === '★') {
-                seriesData[seriesKey].hasStarted = true;
-            }
-        }
-
-        // 3. 棋士ごとの獲得・登場・敗北数の集計
-        const kishiStats = {};
-
-        function getOrCreateKishi(name) {
-            if (!kishiStats[name]) {
-                kishiStats[name] = {
-                    name: name,
-                    titleCount: 0,
-                    appearCount: 0,
-                    loseCount: 0,
-                    titles: {}
-                };
-            }
-            return kishiStats[name];
-        }
-
-        Object.values(seriesData).forEach(s => {
-            const isFinishedA = s.winsA >= s.requiredWins;
-            const isFinishedB = s.winsB >= s.requiredWins;
-            const isFinished = isFinishedA || isFinishedB;
-
-            if (isFinished || s.hasStarted) {
-                const pA = getOrCreateKishi(s.playerA);
-                const pB = getOrCreateKishi(s.playerB);
-
-                pA.appearCount++;
-                pB.appearCount++;
-
-                if (isFinished) {
-                    if (isFinishedA) {
-                        pA.titleCount++;
-                        pB.loseCount++;
-                        pA.titles[s.match] = (pA.titles[s.match] || 0) + 1;
-                    } else {
-                        pB.titleCount++;
-                        pA.loseCount++;
-                        pB.titles[s.match] = (pB.titles[s.match] || 0) + 1;
-                    }
-                }
-            }
-        });
-
-        // 4. 配列変換と勝率計算
-        let rankingArray = Object.values(kishiStats).map(k => {
-            const winRate = k.appearCount > 0 ? (k.titleCount / k.appearCount) : 0;
-            return {
-                ...k,
-                winRate: winRate
-            };
-        });
-
-        sortData(rankingArray, 'titleCount', 'desc');
-        renderTable(rankingArray);
-        setupControls(rankingArray);
-
-    } catch (error) {
-        console.error('エラーが発生しました:', error);
-    }
+try {
+var response = await fetch('タイトル戦対局結果.txt');
+if (!response.ok) throw new Error('File read error');
+var text = await response.text();
+var lines = text.split('\n');
+var validLines = [];
+for (var i = 0; i < lines.length; i++) {
+if (lines[i].trim().length > 0) validLines.push(lines[i].trim());
 }
-
-// テーブル描画
+if (validLines.length < 2) return;
+var header = validLines[0].split(',');
+var colMap = {};
+for (var j = 0; j < header.length; j++) {
+colMap[header[j].trim()] = j;
+}
+var seriesData = {};
+for (var k = 1; k < validLines.length; k++) {
+var lineStr = validLines[k];
+if (lineStr.indexOf('[source:') === 0) continue;
+var cells = lineStr.split(',');
+var match = cells[colMap['match']] ? cells[colMap['match']].trim() : "";
+var the = cells[colMap['the']] ? cells[colMap['the']].trim() : "";
+var phase = cells[colMap['phase']] ? cells[colMap['phase']].trim() : "";
+var playerA = cells[colMap['player_A']] ? cells[colMap['player_A']].trim() : "";
+var playerB = cells[colMap['player_B']] ? cells[colMap['player_B']].trim() : "";
+var resultA = cells[colMap['a']] ? cells[colMap['a']].trim() : "";
+var resultB = cells[colMap['b']] ? cells[colMap['b']].trim() : "";
+if (!match || !the || !playerA || !playerB || playerB === "未定") continue;
+var seriesKey = the + "-" + match;
+if (!seriesData[seriesKey]) {
+var requiredWins = 4;
+if (phase.indexOf('五番勝負') !== -1 || phase.indexOf('5番勝負') !== -1) {
+requiredWins = 3;
+}
+seriesData[seriesKey] = { match: match, the: the, playerA: playerA, playerB: playerB, winsA: 0, winsB: 0, requiredWins: requiredWins, hasStarted: false };
+}
+if (resultA === '☆') {
+seriesData[seriesKey].winsA++;
+seriesData[seriesKey].hasStarted = true;
+} else if (resultB === '☆') {
+seriesData[seriesKey].winsB++;
+seriesData[seriesKey].hasStarted = true;
+} else if (resultA === '★' || resultB === '★') {
+seriesData[seriesKey].hasStarted = true;
+}
+}
+var kishiStats = {};
+function getOrCreateKishi(name) {
+if (!kishiStats[name]) {
+kishiStats[name] = { name: name, titleCount: 0, appearCount: 0, loseCount: 0, titles: {} };
+}
+return kishiStats[name];
+}
+var sKeys = Object.keys(seriesData);
+for (var idx = 0; idx < sKeys.length; idx++) {
+var s = seriesData[sKeys[idx]];
+var isFinishedA = s.winsA >= s.requiredWins;
+var isFinishedB = s.winsB >= s.requiredWins;
+var isFinished = isFinishedA || isFinishedB;
+if (isFinished || s.hasStarted) {
+var pA = getOrCreateKishi(s.playerA);
+var pB = getOrCreateKishi(s.playerB);
+pA.appearCount++;
+pB.appearCount++;
+if (isFinished) {
+if (isFinishedA) {
+pA.titleCount++;
+pB.loseCount++;
+pA.titles[s.match] = (pA.titles[s.match] || 0) + 1;
+} else {
+pB.titleCount++;
+pA.loseCount++;
+pB.titles[s.match] = (pB.titles[s.match] || 0) + 1;
+}
+}
+}
+}
+var rankingArray = [];
+var kKeys = Object.keys(kishiStats);
+for (var m = 0; m < kKeys.length; m++) {
+var kData = kishiStats[kKeys[m]];
+kData.winRate = kData.appearCount > 0 ? (kData.titleCount / kData.appearCount) : 0;
+rankingArray.push(kData);
+}
+sortData(rankingArray, 'titleCount', 'desc');
+renderTable(rankingArray);
+setupControls(rankingArray);
+} catch (error) {
+console.error(error);
+}
+}
 function renderTable(data) {
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
-
-    if (data.length === 0) {
-        document.getElementById('emptyMessage').style.display = 'block';
-        return;
-    }
-    document.getElementById('emptyMessage').style.display = 'none';
-
-    data.forEach((k) => {
-        const titleDetails = Object.entries(k.titles)
-            .map(([match, count]) => match.replace('戦', '') + '(' + count + ')')
-            .join(' ');
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${k.rank}</td>
-            <td style="font-weight: bold; text-align: left; padding-left: 15px;">${k.name}</td>
-            <td style="font-weight: bold; color: #1a3622;">${k.titleCount}</td>
-            <td>${k.appearCount}</td>
-            <td class="pc-col">${k.loseCount}</td>
-            <td style="font-variant-numeric: tabular-nums;">${floorTo4Decimal(k.winRate)}</td>
-            <td class="tablet-col pc-col" style="text-align: left; padding-left: 10px; color: #666; font-size: 12px;">${titleDetails || '-'}</td>
-        `;
-        tbody.appendChild(tr);
-    });
+var tbody = document.getElementById('tableBody');
+tbody.innerHTML = '';
+if (data.length === 0) {
+document.getElementById('emptyMessage').style.display = 'block';
+return;
 }
-
-// ソート・同順位付け処理
+document.getElementById('emptyMessage').style.display = 'none';
+for (var i = 0; i < data.length; i++) {
+var k = data[i];
+var titlesArr = [];
+var tKeys = Object.keys(k.titles);
+for (var j = 0; j < tKeys.length; j++) {
+titlesArr.push(tKeys[j].replace('戦', '') + '(' + k.titles[tKeys[j]] + ')');
+}
+var tr = document.createElement('tr');
+tr.innerHTML = '<td>' + k.rank + '</td>' +
+'<td style="font-weight: bold; text-align: left; padding-left: 15px;">' + k.name + '</td>' +
+'<td style="font-weight: bold; color: #1a3622;">' + k.titleCount + '</td>' +
+'<td>' + k.appearCount + '</td>' +
+'<td class="pc-col">' + k.loseCount + '</td>' +
+'<td style="font-variant-numeric: tabular-nums;">' + floorTo4Decimal(k.winRate) + '</td>' +
+'<td class="tablet-col pc-col" style="text-align: left; padding-left: 10px; color: #666; font-size: 12px;">' + (titlesArr.join(' ') || '-') + '</td>';
+tbody.appendChild(tr);
+}
+}
 function sortData(data, field, direction) {
-    data.sort((a, b) => {
-        let valA = a[field];
-        let valB = b[field];
-
-        if (valA === valB) {
-            return a.name.localeCompare(b.name, 'ja');
-        }
-
-        return direction === 'asc' ? valA - valB : valB - valA;
-    });
-
-    let currentRank = 1;
-    data.forEach((item, index) => {
-        if (index > 0 && data[index - 1][field] !== item[field] && direction === 'desc') {
-            currentRank = index + 1;
-        }
-        item.rank = currentRank;
-    });
+data.sort(function(a, b) {
+var valA = a[field];
+var valB = b[field];
+if (valA === valB) return a.name.localeCompare(b.name, 'ja');
+return direction === 'asc' ? valA - valB : valB - valA;
+});
+var currentRank = 1;
+for (var i = 0; i < data.length; i++) {
+if (i > 0 && data[i - 1][field] !== data[i][field] && direction === 'desc') {
+currentRank = i + 1;
 }
-
-// イベントリスナー設定
+data[i].rank = currentRank;
+}
+}
 function setupControls(allData) {
-    const searchInput = document.getElementById('searchInput');
-    const sortSelect = document.getElementById('sortSelect');
-    const thList = document.querySelectorAll('#titleTable th.sortable');
-
-    function filterAndSort() {
-        const query = searchInput.value.trim();
-        let filtered = allData.filter(k => k.name.includes(query));
-        const [field, direction] = sortSelect.value.split('-');
-        sortData(filtered, field, direction);
-        renderTable(filtered);
-    }
-
-    searchInput.addEventListener('input', filterAndSort);
-
-    sortSelect.addEventListener('change', (e) => {
-        const [field, direction] = e.target.value.split('-');
-        thList.forEach(th => {
-            th.classList.remove('asc', 'desc');
-            if (th.dataset.sort === field) {
-                th.classList.add(direction);
-            }
-        });
-        filterAndSort();
-    });
-
-    thList.forEach(th => {
-        th.addEventListener('click', () => {
-            const field = th.dataset.sort;
-            let direction = 'desc';
-
-            if (th.classList.contains('desc')) {
-                direction = 'asc';
-            } else if (th.classList.contains('asc')) {
-                direction = 'desc';
-            }
-
-            thList.forEach(h => h.classList.remove('asc', 'desc'));
-            th.classList.add(direction);
-            sortSelect.value = field + '-' + direction;
-
-            filterAndSort();
-        });
-    });
+var searchInput = document.getElementById('searchInput');
+var sortSelect = document.getElementById('sortSelect');
+var thList = document.querySelectorAll('#titleTable th.sortable');
+function filterAndSort() {
+var query = searchInput.value.trim();
+var filtered = [];
+for (var i = 0; i < allData.length; i++) {
+if (allData[i].name.indexOf(query) !== -1) filtered.push(allData[i]);
 }
-
+var parts = sortSelect.value.split('-');
+sortData(filtered, parts[0], parts[1]);
+renderTable(filtered);
+}
+searchInput.addEventListener('input', filterAndSort);
+sortSelect.addEventListener('change', function(e) {
+var parts = e.target.value.split('-');
+for (var i = 0; i < thList.length; i++) {
+thList[i].classList.remove('asc', 'desc');
+if (thList[i].dataset.sort === parts[0]) thList[i].classList.add(parts[1]);
+}
+filterAndSort();
+});
+for (var k = 0; k < thList.length; k++) {
+thList[k].addEventListener('click', function(e) {
+var th = e.currentTarget;
+var field = th.dataset.sort;
+var direction = 'desc';
+if (th.classList.contains('desc')) {
+direction = 'asc';
+} else if (th.classList.contains('asc')) {
+direction = 'desc';
+}
+for (var j = 0; j < thList.length; j++) {
+thList[j].classList.remove('asc', 'desc');
+}
+th.classList.add(direction);
+sortSelect.value = field + '-' + direction;
+filterAndSort();
+});
+}
+}
 document.addEventListener('DOMContentLoaded', initRanking);
 </script>
 </body>
