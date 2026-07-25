@@ -15,21 +15,16 @@
 <div class="container">
 <div class="controls">
 <input type="text" id="searchInput" placeholder="棋士名で検索...">
-<select id="sortSelect" class="dynamic-select">
-<option value="titleCount-desc">獲得数 (多度順)</option>
-<option value="appearCount-desc">登場回数 (多度順)</option>
-<option value="winRate-desc">獲得率 (高順)</option>
-</select>
 </div>
 <table id="titleTable">
 <thead>
 <tr>
-<th class="sortable asc" data-sort="rank">順位<div class="sort-icon"></div></th>
-<th class="sortable" data-sort="name">棋士名<div class="sort-icon"></div></th>
-<th class="sortable" data-sort="titleCount">獲得数<div class="sort-icon"></div></th>
-<th class="sortable" data-sort="appearCount">登場回数<div class="sort-icon"></div></th>
-<th class="sortable pc-col" data-sort="loseCount">敗北数<div class="sort-icon"></div></th>
-<th class="sortable" data-sort="winRate">獲得率<div class="sort-icon"></div></th>
+<th class="sortable" data-sort="rank">順位<div class="sort-icon"></div></th>
+<th>棋士名</th>
+<th class="sortable" data-sort="appearCount">登場<div class="sort-icon"></div></th>
+<th class="sortable desc" data-sort="titleCount">獲得<div class="sort-icon"></div></th>
+<th class="sortable" data-sort="loseCount">敗北<div class="sort-icon"></div></th>
+<th class="sortable" data-sort="winRate">勝率<div class="sort-icon"></div></th>
 <th class="tablet-col pc-col">獲得タイトル内訳</th>
 </tr>
 </thead>
@@ -160,9 +155,9 @@ titlesArr.push(tKeys[j].replace('戦', '') + '(' + k.titles[tKeys[j]] + ')');
 var tr = document.createElement('tr');
 tr.innerHTML = '<td>' + k.rank + '</td>' +
 '<td style="font-weight: bold; text-align: left; padding-left: 15px;">' + k.name + '</td>' +
-'<td style="font-weight: bold; color: #1a3622;">' + k.titleCount + '</td>' +
 '<td>' + k.appearCount + '</td>' +
-'<td class="pc-col">' + k.loseCount + '</td>' +
+'<td style="font-weight: bold; color: #1a3622;">' + k.titleCount + '</td>' +
+'<td>' + k.loseCount + '</td>' +
 '<td style="font-variant-numeric: tabular-nums;">' + floorTo4Decimal(k.winRate) + '</td>' +
 '<td class="tablet-col pc-col" style="text-align: left; padding-left: 10px; color: #666; font-size: 12px;">' + (titlesArr.join(' ') || '-') + '</td>';
 tbody.appendChild(tr);
@@ -185,7 +180,6 @@ data[i].rank = currentRank;
 }
 function setupControls(allData) {
 var searchInput = document.getElementById('searchInput');
-var sortSelect = document.getElementById('sortSelect');
 var thList = document.querySelectorAll('#titleTable th.sortable');
 function filterAndSort() {
 var query = searchInput.value.trim();
@@ -193,19 +187,13 @@ var filtered = [];
 for (var i = 0; i < allData.length; i++) {
 if (allData[i].name.indexOf(query) !== -1) filtered.push(allData[i]);
 }
-var parts = sortSelect.value.split('-');
-sortData(filtered, parts[0], parts[1]);
+var activeTh = document.querySelector('#titleTable th.sortable.asc, #titleTable th.sortable.desc');
+var field = activeTh ? activeTh.dataset.sort : 'titleCount';
+var direction = activeTh && activeTh.classList.contains('asc') ? 'asc' : 'desc';
+sortData(filtered, field, direction);
 renderTable(filtered);
 }
 searchInput.addEventListener('input', filterAndSort);
-sortSelect.addEventListener('change', function(e) {
-var parts = e.target.value.split('-');
-for (var i = 0; i < thList.length; i++) {
-thList[i].classList.remove('asc', 'desc');
-if (thList[i].dataset.sort === parts[0]) thList[i].classList.add(parts[1]);
-}
-filterAndSort();
-});
 for (var k = 0; k < thList.length; k++) {
 thList[k].addEventListener('click', function(e) {
 var th = e.currentTarget;
@@ -220,7 +208,6 @@ for (var j = 0; j < thList.length; j++) {
 thList[j].classList.remove('asc', 'desc');
 }
 th.classList.add(direction);
-sortSelect.value = field + '-' + direction;
 filterAndSort();
 });
 }
