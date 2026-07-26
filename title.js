@@ -28,10 +28,12 @@ async function initRanking() {
         for (var k = 1; k < validLines.length; k++) {
             var lineStr = validLines[k];
             if (lineStr.indexOf('[source:') === 0) continue;
+            
             var cells = lineStr.split(',');
             var match = cells[colMap['match']] ? cells[colMap['match']].trim() : "";
             var the = cells[colMap['the']] ? cells[colMap['the']].trim() : "";
             var phase = cells[colMap['phase']] ? cells[colMap['phase']].trim() : "";
+            var detail = cells[colMap['detail']] ? cells[colMap['detail']].trim() : "";
             var playerA = cells[colMap['player_A']] ? cells[colMap['player_A']].trim() : "";
             var playerB = cells[colMap['player_B']] ? cells[colMap['player_B']].trim() : "";
             var resultA = cells[colMap['a']] ? cells[colMap['a']].trim() : "";
@@ -39,12 +41,35 @@ async function initRanking() {
             
             if (!match || !the || !playerA || !playerB || playerB === "未定") continue;
             var seriesKey = the + "-" + match;
+            
             if (!seriesData[seriesKey]) {
                 var requiredWins = 4;
+                var isNoMatch = false; // 「実施なし」フラグを追加
+                
                 if (phase.indexOf('五番勝負') !== -1 || phase.indexOf('5番勝負') !== -1) {
                     requiredWins = 3;
+                } else if (phase.indexOf('三番勝負') !== -1 || phase.indexOf('3番勝負') !== -1) {
+                    requiredWins = 2;
+                } else if (phase.indexOf('決勝') !== -1 || detail.indexOf('決勝') !== -1 || phase.indexOf('一発勝負') !== -1) {
+                    requiredWins = 1;
                 }
-                seriesData[seriesKey] = { match: match, the: the, playerA: playerA, playerB: playerB, winsA: 0, winsB: 0, requiredWins: requiredWins, hasStarted: false };
+                
+                // 「実施なし」の文字が含まれる場合は不戦勝（自動獲得）扱いとする
+                if (detail.indexOf('実施なし') !== -1 || phase.indexOf('実施なし') !== -1) {
+                    isNoMatch = true;
+                }
+                
+                seriesData[seriesKey] = { 
+                    match: match, 
+                    the: the, 
+                    playerA: playerA, 
+                    playerB: playerB, 
+                    winsA: 0, 
+                    winsB: 0, 
+                    requiredWins: requiredWins, 
+                    hasStarted: false,
+                    isNoMatch: isNoMatch
+                };
             }
             
             if (resultA === '☆') {
@@ -69,24 +94,32 @@ async function initRanking() {
         var sKeys = Object.keys(seriesData);
         for (var idx = 0; idx < sKeys.length; idx++) {
             var s = seriesData[sKeys[idx]];
-            var isFinishedA = s.winsA >= s.requiredWins;
-            var isFinishedB = s.winsB >= s.requiredWins;
+            
+            // 💡 実施なしの場合は、問答無用でプレイヤーA（防衛者）の獲得とする
+            var isFinishedA = s.winsA >= s.requiredWins || s.isNoMatch;
+            var isFinishedB = s.winsB >= s.requiredWins && !s.isNoMatch;
             var isFinished = isFinishedA || isFinishedB;
             
             if (isFinished || s.hasStarted) {
                 var pA = getOrCreateKishi(s.playerA);
-                var pB = getOrCreateKishi(s.playerB);
                 pA.appearCount++;
-                pB.appearCount++;
+                
+                var pB = null;
+                // 💡 相手が「該当者なし」の場合は、棋士として集計しない
+                if (s.playerB !== "該当者なし") {
+                    pB = getOrCreateKishi(s.playerB);
+                    pB.appearCount++;
+                }
+                
                 if (isFinished) {
                     if (isFinishedA) {
                         pA.titleCount++;
-                        pB.loseCount++;
+                        if (pB) pB.loseCount++;
                         pA.titles[s.match] = (pA.titles[s.match] || 0) + 1;
                     } else {
-                        pB.titleCount++;
+                        if (pB) pB.titleCount++;
                         pA.loseCount++;
-                        pB.titles[s.match] = (pB.titles[s.match] || 0) + 1;
+                        if (pB) pB.titles[s.match] = (pB.titles[s.match] || 0) + 1;
                     }
                 }
             }
