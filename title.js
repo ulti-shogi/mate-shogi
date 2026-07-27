@@ -93,7 +93,6 @@ async function initRanking() {
             var isFinishedB = s.winsB >= s.requiredWins && !s.isNoMatch;
             var isFinished = isFinishedA || isFinishedB;
             
-            // 💡 修正ポイント：「isFinished（決着がついている）」の場合のみ集計処理を行う
             if (isFinished) {
                 var pA = getOrCreateKishi(s.playerA);
                 pA.appearCount++;
@@ -162,14 +161,33 @@ function renderTable(data) {
     }
 }
 
+// 💡 修正ポイント：同数の場合の並び替えルールを詳細化
 function sortData(data, field, direction) {
     data.sort(function(a, b) {
         var valA = a[field];
         var valB = b[field];
-        if (valA === valB) return a.name.localeCompare(b.name, 'ja');
+        
+        if (valA === valB) {
+            // 登場回数で並び替えている場合 ➔ 獲得数が多い順
+            if (field === 'appearCount') {
+                if (a.titleCount !== b.titleCount) {
+                    return b.titleCount - a.titleCount;
+                }
+            } 
+            // 獲得数・敗北数・勝率で並び替えている場合 ➔ 登場回数が多い順
+            else {
+                if (a.appearCount !== b.appearCount) {
+                    return b.appearCount - a.appearCount;
+                }
+            }
+            // それでも同数の場合 ➔ 最後に五十音順
+            return a.name.localeCompare(b.name, 'ja');
+        }
+        
         return direction === 'asc' ? valA - valB : valB - valA;
     });
     
+    // 順位（Rank）の割り当て：メインのソート基準が同じなら同順位にする
     var currentRank = 1;
     for (var i = 0; i < data.length; i++) {
         if (i > 0 && data[i - 1][field] !== data[i][field] && direction === 'desc') {
