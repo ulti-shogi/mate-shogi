@@ -47,7 +47,6 @@ async function initRanking() {
             var resultB = cells[colMap['b']] ? cells[colMap['b']].trim() : "";
             var others = cells[colMap['others']] ? cells[colMap['others']].trim() : "";
             
-            // 💡 修正ポイント: playerB === "未定" の除外を撤廃し、開幕前の番勝負も読み込む
             if (!match || !the || !playerA || !playerB) continue;
             
             var seriesKey = the + "-" + match;
@@ -79,12 +78,15 @@ async function initRanking() {
                     winsB: 0, 
                     requiredWins: requiredWins, 
                     isNoMatch: isNoMatch,
-                    endDate: gameDate || "" // 決着日付
+                    endDate: "" // 初期値を空に
                 };
             }
             
-            if (gameDate && gameDate > seriesDataMap[seriesKey].endDate) {
-                seriesDataMap[seriesKey].endDate = gameDate;
+            // 💡 修正ポイント：勝敗が「―」（未対局の予定日）でない場合のみ、日付を更新する
+            if (gameDate && resultA !== '―' && resultB !== '―') {
+                if (seriesDataMap[seriesKey].endDate === "" || gameDate > seriesDataMap[seriesKey].endDate) {
+                    seriesDataMap[seriesKey].endDate = gameDate;
+                }
             }
             
             if (resultA === '☆') {
@@ -112,10 +114,8 @@ async function initRanking() {
             
             s.winner = isFinishedA ? 'A' : (isFinishedB ? 'B' : null);
             
-            // 全データをテーブル描画用に保持
             allSeriesData.push(s);
             
-            // 💡 ランキングには「決着がついたもの」だけを加算（未定・進行中は無視）
             if (s.isFinished) {
                 var pA = getOrCreateKishi(s.playerA);
                 pA.appearCount++;
@@ -269,21 +269,16 @@ function initDropdowns() {
         if (m) matchSet[m] = true;
     }
     
-    // 年度は降順（最新順）
     var yearArr = Object.keys(yearSet).sort(function(a, b) { return b - a; });
     
-    // 💡 修正ポイント: 指定された八大タイトル順を固定し、存在すれば配列に追加
     var definedOrder = ["竜王戦", "名人戦", "叡王戦", "王位戦", "王座戦", "棋聖戦", "棋王戦", "王将戦"];
     var matchArr = [];
-    
-    // 1. 指定順に並べる
     for (var i = 0; i < definedOrder.length; i++) {
         if (matchSet[definedOrder[i]]) {
             matchArr.push(definedOrder[i]);
-            delete matchSet[definedOrder[i]]; // 追加したものはSetから消す
+            delete matchSet[definedOrder[i]];
         }
     }
-    // 2. 残った棋戦（十段戦や九段戦など）を後ろに追加
     var remaining = Object.keys(matchSet);
     for (var j = 0; j < remaining.length; j++) {
         matchArr.push(remaining[j]);
@@ -307,7 +302,6 @@ function initDropdowns() {
     }
     mSelect.addEventListener('change', function(e) { renderMatchTable(e.target.value); });
     
-    // 初期描画
     if (yearArr.length > 0) renderYearlyTable(yearArr[0]);
     if (matchArr.length > 0) renderMatchTable(matchArr[0]);
 }
@@ -318,7 +312,6 @@ function renderYearlyTable(year) {
         if (allSeriesData[i].year === year) filtered.push(allSeriesData[i]);
     }
     
-    // 決着日付(endDate)の浅い順(古い順)にソート。
     filtered.sort(function(a, b) {
         if (a.endDate < b.endDate) return -1;
         if (a.endDate > b.endDate) return 1;
@@ -356,7 +349,6 @@ function renderMatchTable(matchName) {
         if (allSeriesData[i].match === matchName) filtered.push(allSeriesData[i]);
     }
     
-    // 期数(theNum)の降順（最新順）にソート
     filtered.sort(function(a, b) {
         return b.theNum - a.theNum;
     });
