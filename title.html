@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:,">
     <style>
-        /* 検索エリアのスタイル追加 */
-        .search-area {
+        /* 絞り込みエリアのスタイル */
+        .filter-area {
             background-color: #f0ebd8;
             padding: 15px;
             margin-bottom: 20px;
@@ -19,17 +19,20 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .search-area label {
+        .filter-area label {
             font-weight: bold;
             color: #1a3622;
         }
-        .search-area input[type="text"] {
+        .filter-area select {
             padding: 5px;
             font-size: 16px;
             border-radius: 4px;
             border: 1px solid #ccc;
-            width: 250px;
-            max-width: 100%;
+            min-width: 150px;
+        }
+        /* 勝者セルの薄い赤色ハイライト */
+        .winner-bg {
+            background-color: #ffe6e6 !important;
         }
     </style>
 </head>
@@ -39,38 +42,77 @@
     <h1><a href="index.html" style="text-decoration: none; color: inherit;">将棋の殿堂</a></h1>
 
     <div class="average-card">
-        <h2 class="average-title" style="margin-bottom:0;">歴代タイトル獲得ランキング</h2>
-        <p class="average-desc" style="margin-top: 10px;">公式タイトル戦の全対局結果から、各棋士の獲得・登場回数および勝率を自動集計</p>
+        <h2 class="average-title" style="margin-bottom:0;">タイトル戦 記録・ランキング</h2>
+        <p class="average-desc" style="margin-top: 10px;">公式タイトル戦の全対局結果から、各棋士の獲得ランキングや各年度・棋戦ごとの結果を表示</p>
     </div>
 
-    <div class="search-area">
-        <label>棋士名検索：
-            <input type="text" id="searchInput" placeholder="棋士名を入力...">
-        </label>
+    <!-- タブ切り替えボタン -->
+    <div class="tabs">
+        <button class="tab-btn active" data-target="panel-ranking">ランキング</button>
+        <button class="tab-btn" data-target="panel-yearly">各年度結果</button>
+        <button class="tab-btn" data-target="panel-match">各棋戦結果</button>
     </div>
 
-    <div id="list-view">
-        <div class="panel active">
-            <table id="titleTable">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>棋士名</th>
-                        <th class="sortable" data-sort="appearCount">登場<span class="sort-icon"></span></th>
-                        <th class="sortable desc" data-sort="titleCount">獲得<span class="sort-icon"></span></th>
-                        <th class="sortable" data-sort="loseCount">敗北<span class="sort-icon"></span></th>
-                        <th class="sortable" data-sort="winRate">勝率<span class="sort-icon"></span></th>
-                        <th class="tablet-col pc-col">獲得タイトル内訳</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-            
-            <div id="emptyMessage" class="empty-message" style="display: none; padding: 20px;">
-                該当する棋士が見つかりません。
-            </div>
+    <!-- 💡 1. ランキング パネル -->
+    <div id="panel-ranking" class="panel active">
+        <table id="titleTable">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>棋士名</th>
+                    <th class="sortable" data-sort="appearCount">登場<span class="sort-icon"></span></th>
+                    <th class="sortable desc" data-sort="titleCount">獲得<span class="sort-icon"></span></th>
+                    <th class="sortable" data-sort="loseCount">敗北<span class="sort-icon"></span></th>
+                    <th class="sortable" data-sort="winRate">勝率<span class="sort-icon"></span></th>
+                    <th class="tablet-col pc-col">獲得タイトル内訳</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- 💡 2. 各年度結果 パネル -->
+    <div id="panel-yearly" class="panel" style="display: none;">
+        <div class="filter-area">
+            <label>年度： <select id="yearSelect"></select></label>
         </div>
+        <table id="yearlyTable">
+            <thead>
+                <tr>
+                    <th>棋戦</th>
+                    <th>期数</th>
+                    <th style="width: 25%;">保持者</th>
+                    <th>勝</th>
+                    <th>勝</th>
+                    <th style="width: 25%;">挑戦者</th>
+                </tr>
+            </thead>
+            <tbody id="yearlyTableBody"></tbody>
+        </table>
+        <div id="yearlyEmptyMessage" class="empty-message" style="display: none; padding: 20px;">データがありません。</div>
     </div>
+
+    <!-- 💡 3. 各棋戦結果 パネル -->
+    <div id="panel-match" class="panel" style="display: none;">
+        <div class="filter-area">
+            <label>棋戦： <select id="matchSelect"></select></label>
+        </div>
+        <table id="matchTable">
+            <thead>
+                <tr>
+                    <th>期数</th>
+                    <th>年度</th>
+                    <th style="width: 25%;">保持者</th>
+                    <th>勝</th>
+                    <th>勝</th>
+                    <th style="width: 25%;">挑戦者</th>
+                </tr>
+            </thead>
+            <tbody id="matchTableBody"></tbody>
+        </table>
+        <div id="matchEmptyMessage" class="empty-message" style="display: none; padding: 20px;">データがありません。</div>
+    </div>
+
 </div>
 
 <footer>
