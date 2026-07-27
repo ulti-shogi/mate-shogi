@@ -6,7 +6,6 @@ function floorTo4Decimal(num) {
     return (str + "0000").substring(0, dotIndex + 5);
 }
 
-// データ全体を保持するグローバル変数
 var allSeriesData = [];
 var rankingData = [];
 
@@ -30,7 +29,6 @@ async function initRanking() {
         
         var seriesDataMap = {};
         
-        // テキストデータの読み込みとシリーズごとの集計
         for (var k = 1; k < validLines.length; k++) {
             var lineStr = validLines[k];
             if (lineStr.indexOf('[source:') === 0) continue;
@@ -78,21 +76,33 @@ async function initRanking() {
                     winsB: 0, 
                     requiredWins: requiredWins, 
                     isNoMatch: isNoMatch,
-                    endDate: "" // 初期値を空に
+                    endDate: "",       // 💡 真の決着日
+                    isDecided: false,  // 💡 決着済みフラグ
+                    latestGameDate: "" // 進行中のための最新対局日
                 };
             }
             
-            // 💡 修正ポイント：勝敗が「―」（未対局の予定日）でない場合のみ、日付を更新する
-            if (gameDate && resultA !== '―' && resultB !== '―') {
-                if (seriesDataMap[seriesKey].endDate === "" || gameDate > seriesDataMap[seriesKey].endDate) {
-                    seriesDataMap[seriesKey].endDate = gameDate;
+            var s = seriesDataMap[seriesKey];
+            
+            // 💡【最重要ロジック】星を数え、規定数に達した日を「決着日」としてロックする
+            if (!s.isDecided) {
+                if (resultA === '☆') s.winsA++;
+                else if (resultB === '☆') s.winsB++;
+                
+                if (s.winsA >= s.requiredWins || s.winsB >= s.requiredWins) {
+                    s.endDate = gameDate;
+                    s.isDecided = true;
+                } else if (s.isNoMatch) {
+                    s.endDate = gameDate; // 実施なしの場合は最初の行の日付
+                    s.isDecided = true;
                 }
             }
             
-            if (resultA === '☆') {
-                seriesDataMap[seriesKey].winsA++;
-            } else if (resultB === '☆') {
-                seriesDataMap[seriesKey].winsB++;
+            // まだ決着がついていないシリーズをテーブル下部に並べるための日付保持
+            if (gameDate && resultA !== '―' && resultB !== '―') {
+                s.latestGameDate = gameDate;
+            } else if (gameDate && !s.latestGameDate) {
+                s.latestGameDate = gameDate;
             }
         }
         
@@ -270,8 +280,20 @@ function initDropdowns() {
     }
     
     var yearArr = Object.keys(yearSet).sort(function(a, b) { return b - a; });
+    var ySelect = document.getElementById('yearSelect');
+    ySelect.innerHTML = ''; 
+    for (var i = 0; i < yearArr.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = yearArr[i];
+        opt.text = yearArr[i] + '年度';
+        ySelect.appendChild(opt);
+    }
+    ySelect.addEventListener('change', function(e) { renderYearlyTable(e.target.value); });
     
+    var mSelect = document.getElementById('matchSelect');
+    mSelect.innerHTML = ''; 
     var definedOrder = ["竜王戦", "名人戦", "叡王戦", "王位戦", "王座戦", "棋聖戦", "棋王戦", "王将戦"];
+    
     var matchArr = [];
     for (var i = 0; i < definedOrder.length; i++) {
         if (matchSet[definedOrder[i]]) {
@@ -284,16 +306,6 @@ function initDropdowns() {
         matchArr.push(remaining[j]);
     }
     
-    var ySelect = document.getElementById('yearSelect');
-    for (var i = 0; i < yearArr.length; i++) {
-        var opt = document.createElement('option');
-        opt.value = yearArr[i];
-        opt.text = yearArr[i] + '年度';
-        ySelect.appendChild(opt);
-    }
-    ySelect.addEventListener('change', function(e) { renderYearlyTable(e.target.value); });
-    
-    var mSelect = document.getElementById('matchSelect');
     for (var j = 0; j < matchArr.length; j++) {
         var opt = document.createElement('option');
         opt.value = matchArr[j];
@@ -303,7 +315,7 @@ function initDropdowns() {
     mSelect.addEventListener('change', function(e) { renderMatchTable(e.target.value); });
     
     if (yearArr.length > 0) renderYearlyTable(yearArr[0]);
-    if (matchArr.length > 0) renderMatchTable(matchArr[0]);
+    if (mSelect.options.length > 0) renderMatchTable(mSelect.options[0].value);
 }
 
 function renderYearlyTable(year) {
@@ -312,9 +324,12 @@ function renderYearlyTable(year) {
         if (allSeriesData[i].year === year) filtered.push(allSeriesData[i]);
     }
     
+    // 💡 決着日（endDate）で正確に並び替える処理
     filtered.sort(function(a, b) {
-        if (a.endDate < b.endDate) return -1;
-        if (a.endDate > b.endDate) return 1;
+        var dateA = a.isDecided && a.endDate ? a.endDate : (a.latestGameDate || "9999-99-99");
+        var dateB = b.isDecided && b.endDate ? b.endDate : (b.latestGameDate || "9999-99-99");
+        if (dateA < dateB) return -1;
+        if (dateA > dateB) return 1;
         return a.theNum - b.theNum;
     });
     
