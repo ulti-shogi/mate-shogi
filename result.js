@@ -233,22 +233,38 @@ function renderSummaryTable(target) {
     let state = target === 'kishi' ? sortStateKishi : sortStateOthers;
     let tableId = target === 'kishi' ? '#summaryTableKishi' : '#summaryTableOthers';
 
+    // 💡 ソート（並び替え）の処理
     viewData.sort((a, b) => {
         let valA, valB;
         if (state.colId === 'games') { valA = a.games; valB = b.games; }
         else if (state.colId === 'wins') { valA = a.wins; valB = b.wins; }
         else if (state.colId === 'losses') { valA = a.losses; valB = b.losses; }
         else if (state.colId === 'winRate') { valA = a.winRate; valB = b.winRate; }
-        else { valA = a.score; valB = b.score; } // 💡 data-col="num" がタップされた時はここを通る
+        else { valA = a.score; valB = b.score; } // 棋士名ソート（num基準）
         
         let cmp = valA - valB;
         if (cmp !== 0) return state.asc ? cmp : -cmp;
 
-        let scoreCmp = a.score - b.score;
-        if (scoreCmp !== 0) return scoreCmp;
-        let gameCmp = b.games - a.games;
-        if (gameCmp !== 0) return gameCmp;
-        return a.name.localeCompare(b.name, 'ja');
+        // 💡 完全に同じ値（同数・同率）だった場合の第2基準ルール
+        if (target === 'kishi') {
+            if (state.colId === 'games') {
+                // 対局数が同じ場合は「勝数が多い順」
+                if (a.wins !== b.wins) return b.wins - a.wins;
+            } else if (['wins', 'losses', 'winRate'].includes(state.colId)) {
+                // 勝数・負数・勝率が同じ場合は「対局数が多い順」
+                if (a.games !== b.games) return b.games - a.games;
+            }
+            // それでも同じ場合（または棋士名ソート時）は「棋士番号(num)が小さい順」
+            return a.score - b.score;
+
+        } else {
+            // 💡 （棋士以外）タブの従来ルール（据え置き）
+            let scoreCmp = a.score - b.score;
+            if (scoreCmp !== 0) return scoreCmp;
+            let gameCmp = b.games - a.games;
+            if (gameCmp !== 0) return gameCmp;
+            return a.name.localeCompare(b.name, 'ja');
+        }
     });
 
     const tbody = document.querySelector(`${tableId} tbody`);
@@ -256,11 +272,30 @@ function renderSummaryTable(target) {
         let colspan = target === 'kishi' ? 6 : 5;
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-message">データなし</td></tr>`;
     } else {
+        // 💡 順位表示用の変数を準備
+        let currentRank = 1;
+        let prevVal = null;
+
         tbody.innerHTML = viewData.map((d, index) => {
             const nameLink = `<a href="javascript:void(0);" onclick="showHistory('${d.name}')" style="color: #0056b3; text-decoration: underline; font-weight: bold; display: block; padding: 5px 0;">${d.name}</a>`;
+            
             if (target === 'kishi') {
+                // 💡 今ソートしている基準の値を取得
+                let currVal;
+                if (state.colId === 'games') currVal = d.games;
+                else if (state.colId === 'wins') currVal = d.wins;
+                else if (state.colId === 'losses') currVal = d.losses;
+                else if (state.colId === 'winRate') currVal = d.winRate;
+                else currVal = d.score; 
+
+                // 💡 前の人と値が違う場合のみ順位を更新（同じ場合はキープ）
+                if (index > 0 && currVal !== prevVal) {
+                    currentRank = index + 1; // 配列インデックスは0始まりなので+1
+                }
+                prevVal = currVal; // 次の人の判定用に保存
+
                 return `<tr>
-                    <td>${index + 1}</td><td style="text-align:left;">${nameLink}</td>
+                    <td>${currentRank}</td><td style="text-align:left;">${nameLink}</td>
                     <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
                     <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
                 </tr>`;
