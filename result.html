@@ -79,8 +79,10 @@
             <table id="summaryTableKishi">
                 <thead>
                     <tr>
-                        <th class="sortable" data-col="score" data-target="kishi">序列<span class="sort-icon"></span></th>
-                        <th>氏名</th>
+                        <!-- 💡 1列目：文字もソート機能も消して空欄に -->
+                        <th></th>
+                        <!-- 💡 2列目：「棋士名」に変更し、ソート機能（num基準）を付与 -->
+                        <th class="sortable" data-col="num" data-target="kishi">棋士名<span class="sort-icon"></span></th>
                         <th class="sortable" data-col="games" data-target="kishi">対局数<span class="sort-icon"></span></th>
                         <th class="sortable" data-col="wins" data-target="kishi">勝数<span class="sort-icon"></span></th>
                         <th class="sortable" data-col="losses" data-target="kishi">負数<span class="sort-icon"></span></th>

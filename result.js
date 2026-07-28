@@ -1,11 +1,11 @@
 let allGameRecords = []; 
-let kishiMap = {};       
-let officialKishiSet = new Set(); 
+let kishiMap = {};       // 💡 profile_kishi.txt から読み込んだ { 名前: num } を保持
 let playerStats = {};    
 let kishiSummary = [];   
 let othersSummary = [];  
 
-const sortStateKishi = { colId: 'score', asc: true };
+// 💡 棋士側のデフォルトソートを「num（棋士番号）の昇順」に変更
+const sortStateKishi = { colId: 'num', asc: true };
 const sortStateOthers = { colId: 'games', asc: false }; 
 
 const dataFiles = [
@@ -21,18 +21,17 @@ window.addEventListener('DOMContentLoaded', () => {
         fetch(file).then(res => res.ok ? res.text() : "").catch(() => "")
     );
     
-    fetchPromises.push(fetch('kishi.csv').then(res => res.ok ? res.text() : "").catch(() => ""));
+    // 💡 kishi.csv の読み込みを削除し、profile_kishi.txt だけを読み込む
     fetchPromises.push(fetch('profile_kishi.txt').then(res => res.ok ? res.text() : "").catch(() => ""));
 
     Promise.all(fetchPromises).then(results => {
         const profileText = results.pop(); 
-        const kishiText = results.pop(); 
         const gameTexts = results;       
 
-        setupKishiMap(kishiText, profileText);
+        setupKishiMap(profileText);
         parseAllGames(gameTexts);
         
-        setupYearSelect(); // 💡 新規追加：データから年度を自動抽出してプルダウンを作る
+        setupYearSelect();
         
         setupUI();
         applyFiltersAndAggregate(); 
@@ -46,22 +45,8 @@ function createHeaderMap(headerLine) {
     return map;
 }
 
-function setupKishiMap(kishiText, profileText) {
-    if (kishiText) {
-        const lines = kishiText.replace(/\r/g, '').split('\n').filter(l => l.trim() !== '');
-        if (lines.length > 0) {
-            const headers = createHeaderMap(lines[0]);
-            for (let i = 1; i < lines.length; i++) {
-                const row = lines[i].split(',');
-                const nameStr = row[headers['棋士名']];
-                if (nameStr) {
-                    const name = nameStr.replace(/[\s ]/g, '').replace(/"/g, '');
-                    const numStr = row[headers['棋士番号']];
-                    kishiMap[name] = numStr ? parseInt(numStr, 10) : 9999; 
-                }
-            }
-        }
-    }
+// 💡 処理を一本化：profile_kishi.txt から「名前」と「num」を両方取得
+function setupKishiMap(profileText) {
     if (profileText) {
         const lines = profileText.replace(/\r/g, '').split('\n').filter(l => l.trim() !== '');
         if (lines.length > 0) {
@@ -70,7 +55,9 @@ function setupKishiMap(kishiText, profileText) {
                 const row = lines[i].split(',');
                 const nameStr = row[headers['fullname']];
                 if (nameStr) {
-                    officialKishiSet.add(nameStr.replace(/[\s ]/g, '').replace(/"/g, ''));
+                    const name = nameStr.replace(/[\s ]/g, '').replace(/"/g, '');
+                    const numStr = row[headers['num']];
+                    kishiMap[name] = numStr ? parseInt(numStr, 10) : 99999; 
                 }
             }
         }
@@ -106,7 +93,7 @@ function parseAllGames(gameTexts) {
             if (match) matchDetailStr += `${match} `;
             if (phase) matchDetailStr += `${phase} `;
             if (detail) matchDetailStr += `${detail} `;
-            if (notes && notes !== "なし") matchDetailStr += ` ${notes}`; // カッコ外し反映済み
+            if (notes && notes !== "なし") matchDetailStr += ` ${notes}`;
             matchDetailStr = matchDetailStr.replace(/\s+/g, ' ').trim();
 
             allGameRecords.push({
@@ -120,40 +107,31 @@ function parseAllGames(gameTexts) {
     });
 }
 
-// 💡 共通関数：日付文字列から「年度」を計算する
 function getNendo(dateStr) {
     if (!dateStr || !dateStr.includes('-')) return null;
     let parts = dateStr.split('-');
     let y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
     if (isNaN(y)) return null;
-    if (isNaN(m)) return y; // 月がxxなどの場合は暫定でその年を年度とする
-    return m <= 3 ? y - 1 : y; // 1〜3月は前年度
+    if (isNaN(m)) return y; 
+    return m <= 3 ? y - 1 : y;
 }
 
-// 💡 新規追加：全データから存在する年度を抽出してプルダウンを生成する
 function setupYearSelect() {
     const yearSet = new Set();
-    
-    // 全対局データから年度を拾い集める
     allGameRecords.forEach(g => {
         const nendo = getNendo(g.date);
-        if (nendo !== null) {
-            yearSet.add(nendo);
-        }
+        if (nendo !== null) yearSet.add(nendo);
     });
 
-    // 年度の数字が大きい順（新しい順）に並び替え
     const sortedYears = Array.from(yearSet).sort((a, b) => b - a);
-    
     const yearSelect = document.getElementById('yearSelect');
-    yearSelect.innerHTML = '<option value="all">全期間</option>'; // 中身をリセット
+    yearSelect.innerHTML = '<option value="all">全期間</option>';
     
-    // 抽出した年度をoptionとして追加
     sortedYears.forEach((year, index) => {
         const option = document.createElement('option');
         option.value = year;
         option.text = `${year}年度`;
-        if (index === 0) option.selected = true; // 自動的に一番新しい年度を選択状態にする
+        if (index === 0) option.selected = true; 
         yearSelect.appendChild(option);
     });
 }
@@ -167,8 +145,9 @@ function applyFiltersAndAggregate() {
     function initPlayer(name) {
         if (!name || name.includes('の勝者') || name === '未定') return false;
         if (!playerStats[name]) {
-            const score = kishiMap[name] !== undefined ? kishiMap[name] : 99999;
-            const isKishi = officialKishiSet.has(name);
+            // 💡 kishiMap に登録されていれば棋士、そうでなければ棋士以外
+            const isKishi = kishiMap[name] !== undefined;
+            const score = isKishi ? kishiMap[name] : 99999;
             playerStats[name] = { name: name, score: score, isKishi: isKishi, games: 0, wins: 0, losses: 0, history: [] };
         }
         return true;
@@ -232,7 +211,8 @@ function setupUI() {
                 state.asc = !state.asc;
             } else {
                 state.colId = colId;
-                state.asc = (colId === 'score');
+                // 💡 ソートキーが「num」ならデフォルト昇順、それ以外（対局数など）ならデフォルト降順
+                state.asc = (colId === 'num'); 
             }
             renderSummaryTable(target);
         });
@@ -259,7 +239,7 @@ function renderSummaryTable(target) {
         else if (state.colId === 'wins') { valA = a.wins; valB = b.wins; }
         else if (state.colId === 'losses') { valA = a.losses; valB = b.losses; }
         else if (state.colId === 'winRate') { valA = a.winRate; valB = b.winRate; }
-        else { valA = a.score; valB = b.score; }
+        else { valA = a.score; valB = b.score; } // 💡 data-col="num" がタップされた時はここを通る
         
         let cmp = valA - valB;
         if (cmp !== 0) return state.asc ? cmp : -cmp;
