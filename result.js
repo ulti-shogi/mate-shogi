@@ -9,8 +9,8 @@ const sortStateKishi = { colId: 'num', asc: true };
 const sortStateOthers = { colId: 'games', asc: false }; 
 
 const dataFiles = [
-    '第74期王座戦.txt', '第85期順位戦.txt', '第39期竜王戦.txt', '第52期棋王戦.txt','第51期棋王戦.txt',
-    '第67期王位戦.txt', '第76期王将戦.txt', '第11期叡王戦.txt', '第97期棋聖戦.txt',
+    '第74期王座戦.txt', '第85期順位戦.txt', '第39期竜王戦.txt', '第52期棋王戦.txt', '第51期棋王戦.txt',
+    '第67期王位戦.txt', '第76期王将戦.txt', '第11期叡王戦.txt', '第97期棋聖戦.txt', '第75回NHK杯本戦.txt',
     '第98期棋聖戦.txt', 'タイトル戦対局結果.txt', '第76回NHK杯本戦.txt', '第34期銀河戦.txt',
     '第47回JT杯.txt', '第46回JT杯.txt', '第16期加古川青流戦.txt', '第57期新人王戦.txt',
     '第4回達人戦.txt', '第20回朝日杯.txt', '第33期銀河戦.txt', '第38期竜王戦.txt', '第73期王座戦.txt'
