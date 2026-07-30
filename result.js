@@ -1,10 +1,9 @@
 let allGameRecords = []; 
-let kishiMap = {};       // 💡 profile_kishi.txt から読み込んだ { 名前: num } を保持
+let kishiMap = {};       
 let playerStats = {};    
 let kishiSummary = [];   
 let othersSummary = [];  
 
-// 💡 棋士側のデフォルトソートを「num（棋士番号）の昇順」に変更
 const sortStateKishi = { colId: 'num', asc: true };
 const sortStateOthers = { colId: 'games', asc: false }; 
 
@@ -21,7 +20,6 @@ window.addEventListener('DOMContentLoaded', () => {
         fetch(file).then(res => res.ok ? res.text() : "").catch(() => "")
     );
     
-    // 💡 kishi.csv の読み込みを削除し、profile_kishi.txt だけを読み込む
     fetchPromises.push(fetch('profile_kishi.txt').then(res => res.ok ? res.text() : "").catch(() => ""));
 
     Promise.all(fetchPromises).then(results => {
@@ -45,7 +43,6 @@ function createHeaderMap(headerLine) {
     return map;
 }
 
-// 💡 処理を一本化：profile_kishi.txt から「名前」と「num」を両方取得
 function setupKishiMap(profileText) {
     if (profileText) {
         const lines = profileText.replace(/\r/g, '').split('\n').filter(l => l.trim() !== '');
@@ -138,14 +135,12 @@ function setupYearSelect() {
 
 function applyFiltersAndAggregate() {
     const yearFilter = document.getElementById('yearSelect').value;
-    const matchFilter = document.getElementById('matchSelect').value;
 
     playerStats = {}; 
 
     function initPlayer(name) {
         if (!name || name.includes('の勝者') || name === '未定') return false;
         if (!playerStats[name]) {
-            // 💡 kishiMap に登録されていれば棋士、そうでなければ棋士以外
             const isKishi = kishiMap[name] !== undefined;
             const score = isKishi ? kishiMap[name] : 99999;
             playerStats[name] = { name: name, score: score, isKishi: isKishi, games: 0, wins: 0, losses: 0, history: [] };
@@ -157,10 +152,6 @@ function applyFiltersAndAggregate() {
 
     allGameRecords.forEach(g => {
         if (yearFilter !== 'all' && getNendo(g.date) !== parseInt(yearFilter, 10)) return; 
-        if (matchFilter !== 'all') {
-             if (matchFilter === '名人戦') { if (g.match !== '名人戦' && g.match !== '順位戦') return; } 
-             else if (g.match !== matchFilter) return;
-        }
 
         if (initPlayer(g.p1) && validRes.includes(g.p1_res)) {
             playerStats[g.p1].games++;
@@ -211,7 +202,6 @@ function setupUI() {
                 state.asc = !state.asc;
             } else {
                 state.colId = colId;
-                // 💡 ソートキーが「num」ならデフォルト昇順、それ以外（対局数など）ならデフォルト降順
                 state.asc = (colId === 'num'); 
             }
             renderSummaryTable(target);
@@ -219,7 +209,6 @@ function setupUI() {
     });
 
     document.getElementById('yearSelect').addEventListener('change', applyFiltersAndAggregate);
-    document.getElementById('matchSelect').addEventListener('change', applyFiltersAndAggregate);
 
     document.getElementById('backToListBtn').addEventListener('click', () => {
         document.getElementById('history-view').style.display = 'none';
@@ -233,32 +222,25 @@ function renderSummaryTable(target) {
     let state = target === 'kishi' ? sortStateKishi : sortStateOthers;
     let tableId = target === 'kishi' ? '#summaryTableKishi' : '#summaryTableOthers';
 
-    // 💡 ソート（並び替え）の処理
     viewData.sort((a, b) => {
         let valA, valB;
         if (state.colId === 'games') { valA = a.games; valB = b.games; }
         else if (state.colId === 'wins') { valA = a.wins; valB = b.wins; }
         else if (state.colId === 'losses') { valA = a.losses; valB = b.losses; }
         else if (state.colId === 'winRate') { valA = a.winRate; valB = b.winRate; }
-        else { valA = a.score; valB = b.score; } // 棋士名ソート（num基準）
+        else { valA = a.score; valB = b.score; } 
         
         let cmp = valA - valB;
         if (cmp !== 0) return state.asc ? cmp : -cmp;
 
-        // 💡 完全に同じ値（同数・同率）だった場合の第2基準ルール
         if (target === 'kishi') {
             if (state.colId === 'games') {
-                // 対局数が同じ場合は「勝数が多い順」
                 if (a.wins !== b.wins) return b.wins - a.wins;
             } else if (['wins', 'losses', 'winRate'].includes(state.colId)) {
-                // 勝数・負数・勝率が同じ場合は「対局数が多い順」
                 if (a.games !== b.games) return b.games - a.games;
             }
-            // それでも同じ場合（または棋士名ソート時）は「棋士番号(num)が小さい順」
             return a.score - b.score;
-
         } else {
-            // 💡 （棋士以外）タブの従来ルール（据え置き）
             let scoreCmp = a.score - b.score;
             if (scoreCmp !== 0) return scoreCmp;
             let gameCmp = b.games - a.games;
@@ -272,7 +254,6 @@ function renderSummaryTable(target) {
         let colspan = target === 'kishi' ? 6 : 5;
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-message">データなし</td></tr>`;
     } else {
-        // 💡 順位表示用の変数を準備
         let currentRank = 1;
         let prevVal = null;
 
@@ -280,7 +261,6 @@ function renderSummaryTable(target) {
             const nameLink = `<a href="javascript:void(0);" onclick="showHistory('${d.name}')" style="color: #0056b3; text-decoration: underline; font-weight: bold; display: block; padding: 5px 0;">${d.name}</a>`;
             
             if (target === 'kishi') {
-                // 💡 今ソートしている基準の値を取得
                 let currVal;
                 if (state.colId === 'games') currVal = d.games;
                 else if (state.colId === 'wins') currVal = d.wins;
@@ -288,11 +268,10 @@ function renderSummaryTable(target) {
                 else if (state.colId === 'winRate') currVal = d.winRate;
                 else currVal = d.score; 
 
-                // 💡 前の人と値が違う場合のみ順位を更新（同じ場合はキープ）
                 if (index > 0 && currVal !== prevVal) {
-                    currentRank = index + 1; // 配列インデックスは0始まりなので+1
+                    currentRank = index + 1; 
                 }
-                prevVal = currVal; // 次の人の判定用に保存
+                prevVal = currVal; 
 
                 return `<tr>
                     <td>${currentRank}</td><td style="text-align:left;">${nameLink}</td>
@@ -327,12 +306,11 @@ window.showHistory = function(playerName) {
     const tbody = document.querySelector('#historyTable tbody');
 
     const yearFilter = document.getElementById('yearSelect');
-    const matchFilter = document.getElementById('matchSelect');
     const yearText = yearFilter.options[yearFilter.selectedIndex].text;
-    const matchText = matchFilter.options[matchFilter.selectedIndex].text;
     
     let rateStr = pData.games > 0 ? (pData.wins / pData.games).toFixed(4) : "-";
-    statsCard.innerHTML = `【${playerName}】<br><span style="font-size: 0.9em; font-weight: normal;">${yearText} / ${matchText}： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）</span>`;
+    // 💡 棋戦の文言表示も削除し、シンプルに年度のみを表示
+    statsCard.innerHTML = `【${playerName}】<br><span style="font-size: 0.9em; font-weight: normal;">${yearText}： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）</span>`;
 
     let games = [...pData.history].sort((a,b) => {
         let dA = new Date(a.date.replace(/x/g, '0'));
