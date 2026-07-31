@@ -1,7 +1,13 @@
 let allGameRecords = []; 
 let kishiMap = {};       
+let joryuSet = new Set(); // 💡 女流棋士の名前を保持するリスト
 let playerStats = {};    
+
+// 💡 5つのカテゴリごとの集計配列
 let kishiSummary = [];   
+let joryuSummary = [];
+let shoreikaiSummary = [];
+let amaSummary = [];
 let othersSummary = [];  
 
 const sortStateKishi = { colId: 'num', asc: true };
@@ -10,8 +16,8 @@ const sortStateOthers = { colId: 'games', asc: false };
 const dataFiles = [
     '第74期王座戦.txt', '第85期順位戦.txt', '第39期竜王戦.txt', '第52期棋王戦.txt', '第51期棋王戦.txt',
     '第67期王位戦.txt', '第76期王将戦.txt', '第11期叡王戦.txt', '第97期棋聖戦.txt', '第75回NHK杯.txt',
-    '第98期棋聖戦.txt', 'タイトル戦対局結果.txt', '第76回NHK杯本戦.txt', '第34期銀河戦.txt',
-    '第47回JT杯.txt', '第46回JT杯.txt', '第16期加古川青流戦.txt', '第57期新人王戦.txt', '第19回朝日杯.txt',
+    '第98期棋聖戦.txt', 'タイトル戦対局結果.txt', '第76回NHK杯本戦.txt', '第34期銀河戦.txt', '第20回朝日杯.txt',
+    '第47回JT杯.txt', '第46回JT杯.txt', '第16期加古川青流戦.txt', '第57期新人王戦.txt',
     '第4回達人戦.txt', '第20回朝日杯.txt', '第33期銀河戦.txt', '第38期竜王戦.txt', '第73期王座戦.txt'
 ];
 
@@ -21,12 +27,15 @@ window.addEventListener('DOMContentLoaded', () => {
     );
     
     fetchPromises.push(fetch('profile_kishi.txt').then(res => res.ok ? res.text() : "").catch(() => ""));
+    fetchPromises.push(fetch('profile_joryu.txt').then(res => res.ok ? res.text() : "").catch(() => "")); // 💡 追加
 
     Promise.all(fetchPromises).then(results => {
-        const profileText = results.pop(); 
+        const profileJoryuText = results.pop(); 
+        const profileKishiText = results.pop(); 
         const gameTexts = results;       
 
-        setupKishiMap(profileText);
+        setupKishiMap(profileKishiText);
+        setupJoryuSet(profileJoryuText); // 💡 追加
         parseAllGames(gameTexts);
         
         setupYearSelect();
@@ -55,6 +64,23 @@ function setupKishiMap(profileText) {
                     const name = nameStr.replace(/[\s ]/g, '').replace(/"/g, '');
                     const numStr = row[headers['num']];
                     kishiMap[name] = numStr ? parseInt(numStr, 10) : 99999; 
+                }
+            }
+        }
+    }
+}
+
+// 💡 新設：女流棋士データの読み込み
+function setupJoryuSet(profileText) {
+    if (profileText) {
+        const lines = profileText.replace(/\r/g, '').split('\n').filter(l => l.trim() !== '');
+        if (lines.length > 0) {
+            const headers = createHeaderMap(lines[0]);
+            for (let i = 1; i < lines.length; i++) {
+                const row = lines[i].split(',');
+                const nameStr = row[headers['女流棋士名']]; // ファイルの列名
+                if (nameStr) {
+                    joryuSet.add(nameStr.replace(/[\s ]/g, '').replace(/"/g, ''));
                 }
             }
         }
@@ -141,9 +167,19 @@ function applyFiltersAndAggregate() {
     function initPlayer(name) {
         if (!name || name.includes('の勝者') || name === '未定') return false;
         if (!playerStats[name]) {
+            // 💡 5カテゴリへの振り分け判定
             const isKishi = kishiMap[name] !== undefined;
+            const isJoryu = joryuSet.has(name);
+            const isShoreikai = name.endsWith('三段');
+            const isAma = name.endsWith('アマ');
+            const isOthers = !isKishi && !isJoryu && !isShoreikai && !isAma;
+
             const score = isKishi ? kishiMap[name] : 99999;
-            playerStats[name] = { name: name, score: score, isKishi: isKishi, games: 0, wins: 0, losses: 0, history: [] };
+            playerStats[name] = { 
+                name: name, score: score, 
+                isKishi, isJoryu, isShoreikai, isAma, isOthers, 
+                games: 0, wins: 0, losses: 0, history: [] 
+            };
         }
         return true;
     }
@@ -172,10 +208,17 @@ function applyFiltersAndAggregate() {
         return { ...p, winRate: rate, winRateStr: p.games > 0 ? rate.toFixed(4) : "-" };
     });
 
+    // 💡 各配列への振り分け
     kishiSummary = allSummary.filter(p => p.isKishi);
-    othersSummary = allSummary.filter(p => !p.isKishi);
+    joryuSummary = allSummary.filter(p => p.isJoryu);
+    shoreikaiSummary = allSummary.filter(p => p.isShoreikai);
+    amaSummary = allSummary.filter(p => p.isAma);
+    othersSummary = allSummary.filter(p => p.isOthers);
 
     renderSummaryTable('kishi');
+    renderSummaryTable('joryu');
+    renderSummaryTable('shoreikai');
+    renderSummaryTable('ama');
     renderSummaryTable('others');
 
     document.getElementById('list-view').style.display = 'block';
@@ -196,13 +239,12 @@ function setupUI() {
         th.addEventListener('click', function() {
             let colId = this.dataset.col;
             let target = this.dataset.target; 
-            let state = target === 'kishi' ? sortStateKishi : sortStateOthers;
-
-            if (state.colId === colId) {
-                state.asc = !state.asc;
-            } else {
-                state.colId = colId;
-                state.asc = (colId === 'num'); 
+            if (target === 'kishi') {
+                if (sortStateKishi.colId === colId) sortStateKishi.asc = !sortStateKishi.asc;
+                else { sortStateKishi.colId = colId; sortStateKishi.asc = (colId === 'num'); }
+            } else if (target === 'others') {
+                if (sortStateOthers.colId === colId) sortStateOthers.asc = !sortStateOthers.asc;
+                else { sortStateOthers.colId = colId; sortStateOthers.asc = (colId === 'num'); }
             }
             renderSummaryTable(target);
         });
@@ -218,40 +260,51 @@ function setupUI() {
 }
 
 function renderSummaryTable(target) {
-    let viewData = target === 'kishi' ? [...kishiSummary] : [...othersSummary];
-    let state = target === 'kishi' ? sortStateKishi : sortStateOthers;
-    let tableId = target === 'kishi' ? '#summaryTableKishi' : '#summaryTableOthers';
+    let viewData, state, tableId;
+    
+    // 💡 ターゲットごとの設定
+    if (target === 'kishi') { viewData = [...kishiSummary]; state = sortStateKishi; tableId = '#summaryTableKishi'; }
+    else if (target === 'others') { viewData = [...othersSummary]; state = sortStateOthers; tableId = '#summaryTableOthers'; }
+    else if (target === 'joryu') { viewData = [...joryuSummary]; tableId = '#summaryTableJoryu'; }
+    else if (target === 'shoreikai') { viewData = [...shoreikaiSummary]; tableId = '#summaryTableShoreikai'; }
+    else if (target === 'ama') { viewData = [...amaSummary]; tableId = '#summaryTableAma'; }
 
+    // 💡 ソート処理
     viewData.sort((a, b) => {
-        let valA, valB;
-        if (state.colId === 'games') { valA = a.games; valB = b.games; }
-        else if (state.colId === 'wins') { valA = a.wins; valB = b.wins; }
-        else if (state.colId === 'losses') { valA = a.losses; valB = b.losses; }
-        else if (state.colId === 'winRate') { valA = a.winRate; valB = b.winRate; }
-        else { valA = a.score; valB = b.score; } 
-        
-        let cmp = valA - valB;
-        if (cmp !== 0) return state.asc ? cmp : -cmp;
+        if (target === 'kishi' || target === 'others') {
+            let valA, valB;
+            if (state.colId === 'games') { valA = a.games; valB = b.games; }
+            else if (state.colId === 'wins') { valA = a.wins; valB = b.wins; }
+            else if (state.colId === 'losses') { valA = a.losses; valB = b.losses; }
+            else if (state.colId === 'winRate') { valA = a.winRate; valB = b.winRate; }
+            else { valA = a.score; valB = b.score; } 
+            
+            let cmp = valA - valB;
+            if (cmp !== 0) return state.asc ? cmp : -cmp;
 
-        if (target === 'kishi') {
-            if (state.colId === 'games') {
-                if (a.wins !== b.wins) return b.wins - a.wins;
-            } else if (['wins', 'losses', 'winRate'].includes(state.colId)) {
-                if (a.games !== b.games) return b.games - a.games;
+            if (target === 'kishi') {
+                if (state.colId === 'games') {
+                    if (a.wins !== b.wins) return b.wins - a.wins;
+                } else if (['wins', 'losses', 'winRate'].includes(state.colId)) {
+                    if (a.games !== b.games) return b.games - a.games;
+                }
+                return a.score - b.score;
+            } else {
+                let scoreCmp = a.score - b.score;
+                if (scoreCmp !== 0) return scoreCmp;
+                let gameCmp = b.games - a.games;
+                if (gameCmp !== 0) return gameCmp;
+                return a.name.localeCompare(b.name, 'ja');
             }
-            return a.score - b.score;
         } else {
-            let scoreCmp = a.score - b.score;
-            if (scoreCmp !== 0) return scoreCmp;
-            let gameCmp = b.games - a.games;
-            if (gameCmp !== 0) return gameCmp;
+            // 💡 新設タブ（女流・奨励会・アマ）は名前の五十音順で固定
             return a.name.localeCompare(b.name, 'ja');
         }
     });
 
     const tbody = document.querySelector(`${tableId} tbody`);
     if (viewData.length === 0) {
-        let colspan = target === 'kishi' ? 6 : 5;
+        let colspan = (target === 'others') ? 5 : 6;
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-message">データなし</td></tr>`;
     } else {
         let currentRank = 1;
@@ -268,9 +321,7 @@ function renderSummaryTable(target) {
                 else if (state.colId === 'winRate') currVal = d.winRate;
                 else currVal = d.score; 
 
-                if (index > 0 && currVal !== prevVal) {
-                    currentRank = index + 1; 
-                }
+                if (index > 0 && currVal !== prevVal) currentRank = index + 1; 
                 prevVal = currVal; 
 
                 return `<tr>
@@ -278,9 +329,16 @@ function renderSummaryTable(target) {
                     <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
                     <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
                 </tr>`;
-            } else {
+            } else if (target === 'others') {
                 return `<tr>
                     <td style="text-align:left;">${nameLink}</td>
+                    <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
+                    <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
+                </tr>`;
+            } else {
+                // 💡 新設タブ（女流・奨励会・アマ）：シンプルな連番（index + 1）を表示
+                return `<tr>
+                    <td>${index + 1}</td><td style="text-align:left;">${nameLink}</td>
                     <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
                     <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
                 </tr>`;
@@ -288,10 +346,12 @@ function renderSummaryTable(target) {
         }).join('');
     }
 
-    document.querySelectorAll(`${tableId} th.sortable`).forEach(th => {
-        th.classList.remove('asc', 'desc');
-        if (th.dataset.col === state.colId) th.classList.add(state.asc ? 'asc' : 'desc');
-    });
+    if (target === 'kishi' || target === 'others') {
+        document.querySelectorAll(`${tableId} th.sortable`).forEach(th => {
+            th.classList.remove('asc', 'desc');
+            if (th.dataset.col === state.colId) th.classList.add(state.asc ? 'asc' : 'desc');
+        });
+    }
 }
 
 window.showHistory = function(playerName) {
@@ -309,7 +369,6 @@ window.showHistory = function(playerName) {
     const yearText = yearFilter.options[yearFilter.selectedIndex].text;
     
     let rateStr = pData.games > 0 ? (pData.wins / pData.games).toFixed(4) : "-";
-    // 💡 棋戦の文言表示も削除し、シンプルに年度のみを表示
     statsCard.innerHTML = `【${playerName}】<br><span style="font-size: 0.9em; font-weight: normal;">${yearText}： ${pData.wins}勝 ${pData.losses}敗 （勝率 ${rateStr}）</span>`;
 
     let games = [...pData.history].sort((a,b) => {

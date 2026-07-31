@@ -51,6 +51,9 @@
     <div id="list-view">
         <div class="tabs">
             <button class="tab-btn active" data-target="panel-summary-kishi">勝敗一覧（棋士のみ）</button>
+            <button class="tab-btn" data-target="panel-summary-joryu">勝敗一覧（女流棋士）</button>
+            <button class="tab-btn" data-target="panel-summary-shoreikai">勝敗一覧（奨励会員）</button>
+            <button class="tab-btn" data-target="panel-summary-ama">勝敗一覧（アマ強豪）</button>
             <button class="tab-btn" data-target="panel-summary-others">勝敗一覧（棋士以外）</button>
         </div>
 
@@ -58,9 +61,7 @@
             <table id="summaryTableKishi">
                 <thead>
                     <tr>
-                        <!-- 💡 1列目：文字もソート機能も消して空欄に -->
-                        <th>No.</th>
-                        <!-- 💡 2列目：「棋士名」に変更し、ソート機能（num基準）を付与 -->
+                        <th></th>
                         <th class="sortable" data-col="num" data-target="kishi">棋士名<span class="sort-icon"></span></th>
                         <th class="sortable" data-col="games" data-target="kishi">対局数<span class="sort-icon"></span></th>
                         <th class="sortable" data-col="wins" data-target="kishi">勝数<span class="sort-icon"></span></th>
@@ -71,6 +72,42 @@
                 <tbody>
                     <tr><td colspan="6" class="empty-message">データ読み込み中...</td></tr>
                 </tbody>
+            </table>
+        </div>
+
+        <!-- 💡 新設：女流棋士テーブル -->
+        <div id="panel-summary-joryu" class="panel">
+            <table id="summaryTableJoryu">
+                <thead>
+                    <tr>
+                        <th>順</th><th>氏名</th><th>対局数</th><th>勝数</th><th>負数</th><th>勝率</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="6" class="empty-message">データ読み込み中...</td></tr></tbody>
+            </table>
+        </div>
+
+        <!-- 💡 新設：奨励会員テーブル -->
+        <div id="panel-summary-shoreikai" class="panel">
+            <table id="summaryTableShoreikai">
+                <thead>
+                    <tr>
+                        <th>順</th><th>氏名</th><th>対局数</th><th>勝数</th><th>負数</th><th>勝率</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="6" class="empty-message">データ読み込み中...</td></tr></tbody>
+            </table>
+        </div>
+
+        <!-- 💡 新設：アマ強豪テーブル -->
+        <div id="panel-summary-ama" class="panel">
+            <table id="summaryTableAma">
+                <thead>
+                    <tr>
+                        <th>順</th><th>氏名</th><th>対局数</th><th>勝数</th><th>負数</th><th>勝率</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="6" class="empty-message">データ読み込み中...</td></tr></tbody>
             </table>
         </div>
 
