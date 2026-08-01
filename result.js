@@ -1,19 +1,5 @@
 let allGameRecords = []; 
 let kishiMap = {};       
-let joryuSet = new Set(); // 💡 女流棋士の名前を保持するリスト
-let playerStats = {};    
-
-// 💡 5つのカテゴリごとの集計配列
-let kishiSummary = [];   
-let joryuSummary = [];
-let shoreikaiSummary = [];
-let amaSummary = [];
-let othersSummary = [];  
-
-const sortStateKishi = { colId: 'num', asc: true };
-const sortStateOthers = { colId: 'games', asc: false }; 
-let allGameRecords = []; 
-let kishiMap = {};       
 let joryuMap = {}; // 💡 joryuSet から joryuMap に変更（所属や番号も保持するため）
 let playerStats = {};    
 
