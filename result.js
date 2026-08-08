@@ -12,13 +12,13 @@ let othersSummary = [];
 const sortStateKishi = { colId: 'num', asc: true };
 const sortStateOthers = { colId: 'games', asc: false }; 
 
+// 💡 変更箇所：個別の棋戦ファイルから、結合ツールで作った「まとめファイル」に変更
 const dataFiles = [
-    '第74期王座戦.txt', '第85期順位戦.txt', '第39期竜王戦.txt', '第52期棋王戦.txt', '第51期棋王戦.txt', '第96期棋聖戦.txt',
-    '第67期王位戦.txt', '第76期王将戦.txt', '第11期叡王戦.txt', '第97期棋聖戦.txt', '第75回NHK杯.txt', '第84期順位戦.txt',
-    '第98期棋聖戦.txt', 'タイトル戦対局結果.txt', '第76回NHK杯本戦.txt', '第34期銀河戦.txt', '第19回朝日杯.txt',
-    '第47回JT杯.txt', '第46回JT杯.txt', '第16期加古川青流戦.txt', '第57期新人王戦.txt', '第3回達人戦.txt',
-    '第4回達人戦.txt', '第20回朝日杯.txt', '第33期銀河戦.txt', '第38期竜王戦.txt', '第73期王座戦.txt',
-    '第66期王位戦.txt', '第75期王将戦.txt', '第56期新人王戦.txt', '第15回加古川青流戦.txt'
+    'games_2026.txt',
+    'games_2025.txt',
+    // 💡 今後過去のデータを追加する場合は、以下のようにカンマ区切りで書き足すだけでOKです！
+    // 'games_2024.txt',
+    // 'games_2023.txt'
 ];
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -35,7 +35,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const gameTexts = results;       
 
         setupKishiMap(profileKishiText);
-        setupJoryuMap(profileJoryuText); // 💡 Map版に変更
+        setupJoryuMap(profileJoryuText); 
         parseAllGames(gameTexts);
         
         setupYearSelect();
@@ -70,7 +70,6 @@ function setupKishiMap(profileText) {
     }
 }
 
-// 💡 変更：女流棋士の名前・所属・番号をセットで読み込む
 function setupJoryuMap(profileText) {
     if (profileText) {
         const lines = profileText.replace(/\r/g, '').split('\n').filter(l => l.trim() !== '');
@@ -86,7 +85,6 @@ function setupJoryuMap(profileText) {
                     const name = nameStr.replace(/[\s ]/g, '').replace(/"/g, '');
                     const affiliation = affStr ? affStr.trim() : 'フリー';
                     
-                    // 所属の優先順位をスコア化（JSA:1, LPSA:2, フリー:3）
                     let affScore = 3; 
                     if (affiliation === 'JSA') affScore = 1;
                     else if (affiliation === 'LPSA') affScore = 2;
@@ -187,7 +185,6 @@ function applyFiltersAndAggregate() {
             const isOthers = !isKishi && !isJoryu && !isShoreikai && !isAma;
 
             const score = isKishi ? kishiMap[name] : 99999;
-            // 💡 女流用のソートキー（所属スコアと番号）を付与
             const jAff = isJoryu ? joryuMap[name].affScore : 99;
             const jNum = isJoryu ? joryuMap[name].num : 99999;
 
@@ -310,12 +307,10 @@ function renderSummaryTable(target) {
                 return a.name.localeCompare(b.name, 'ja');
             }
         } else if (target === 'joryu') {
-            // 💡 変更：女流棋士のソート（所属優先度 → 番号順）
             if (a.jAff !== b.jAff) return a.jAff - b.jAff;
             if (a.jNum !== b.jNum) return a.jNum - b.jNum;
             return a.name.localeCompare(b.name, 'ja');
         } else {
-            // 奨励会・アマは名前の五十音順
             return a.name.localeCompare(b.name, 'ja');
         }
     });
