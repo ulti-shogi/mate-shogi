@@ -1,24 +1,19 @@
 let allGameRecords = []; 
 let kishiMap = {};       
-let joryuMap = {}; // 💡 joryuSet から joryuMap に変更（所属や番号も保持するため）
+let joryuMap = {}; 
 let playerStats = {};    
 
 let kishiSummary = [];   
 let joryuSummary = [];
 let shoreikaiSummary = [];
 let amaSummary = [];
-let othersSummary = [];  
 
 const sortStateKishi = { colId: 'num', asc: true };
-const sortStateOthers = { colId: 'games', asc: false }; 
 
-// 💡 変更箇所：個別の棋戦ファイルから、結合ツールで作った「まとめファイル」に変更
 const dataFiles = [
     'games_2026.txt',
     'games_2025.txt',
     'games_2024.txt',
-    // 💡 今後過去のデータを追加する場合は、以下のようにカンマ区切りで書き足すだけでOKです！
-    // 'games_2024.txt',
     // 'games_2023.txt'
 ];
 
@@ -183,7 +178,6 @@ function applyFiltersAndAggregate() {
             const isJoryu = joryuMap[name] !== undefined;
             const isShoreikai = name.endsWith('三段');
             const isAma = name.endsWith('アマ');
-            const isOthers = !isKishi && !isJoryu && !isShoreikai && !isAma;
 
             const score = isKishi ? kishiMap[name] : 99999;
             const jAff = isJoryu ? joryuMap[name].affScore : 99;
@@ -191,7 +185,7 @@ function applyFiltersAndAggregate() {
 
             playerStats[name] = { 
                 name: name, score: score, jAff: jAff, jNum: jNum,
-                isKishi, isJoryu, isShoreikai, isAma, isOthers, 
+                isKishi, isJoryu, isShoreikai, isAma,
                 games: 0, wins: 0, losses: 0, history: [] 
             };
         }
@@ -226,13 +220,11 @@ function applyFiltersAndAggregate() {
     joryuSummary = allSummary.filter(p => p.isJoryu);
     shoreikaiSummary = allSummary.filter(p => p.isShoreikai);
     amaSummary = allSummary.filter(p => p.isAma);
-    othersSummary = allSummary.filter(p => p.isOthers);
 
     renderSummaryTable('kishi');
     renderSummaryTable('joryu');
     renderSummaryTable('shoreikai');
     renderSummaryTable('ama');
-    renderSummaryTable('others');
 
     document.getElementById('list-view').style.display = 'block';
     document.getElementById('history-view').style.display = 'none';
@@ -255,11 +247,8 @@ function setupUI() {
             if (target === 'kishi') {
                 if (sortStateKishi.colId === colId) sortStateKishi.asc = !sortStateKishi.asc;
                 else { sortStateKishi.colId = colId; sortStateKishi.asc = (colId === 'num'); }
-            } else if (target === 'others') {
-                if (sortStateOthers.colId === colId) sortStateOthers.asc = !sortStateOthers.asc;
-                else { sortStateOthers.colId = colId; sortStateOthers.asc = (colId === 'num'); }
+                renderSummaryTable(target);
             }
-            renderSummaryTable(target);
         });
     });
 
@@ -276,13 +265,12 @@ function renderSummaryTable(target) {
     let viewData, state, tableId;
     
     if (target === 'kishi') { viewData = [...kishiSummary]; state = sortStateKishi; tableId = '#summaryTableKishi'; }
-    else if (target === 'others') { viewData = [...othersSummary]; state = sortStateOthers; tableId = '#summaryTableOthers'; }
     else if (target === 'joryu') { viewData = [...joryuSummary]; tableId = '#summaryTableJoryu'; }
     else if (target === 'shoreikai') { viewData = [...shoreikaiSummary]; tableId = '#summaryTableShoreikai'; }
     else if (target === 'ama') { viewData = [...amaSummary]; tableId = '#summaryTableAma'; }
 
     viewData.sort((a, b) => {
-        if (target === 'kishi' || target === 'others') {
+        if (target === 'kishi') {
             let valA, valB;
             if (state.colId === 'games') { valA = a.games; valB = b.games; }
             else if (state.colId === 'wins') { valA = a.wins; valB = b.wins; }
@@ -293,20 +281,12 @@ function renderSummaryTable(target) {
             let cmp = valA - valB;
             if (cmp !== 0) return state.asc ? cmp : -cmp;
 
-            if (target === 'kishi') {
-                if (state.colId === 'games') {
-                    if (a.wins !== b.wins) return b.wins - a.wins;
-                } else if (['wins', 'losses', 'winRate'].includes(state.colId)) {
-                    if (a.games !== b.games) return b.games - a.games;
-                }
-                return a.score - b.score;
-            } else {
-                let scoreCmp = a.score - b.score;
-                if (scoreCmp !== 0) return scoreCmp;
-                let gameCmp = b.games - a.games;
-                if (gameCmp !== 0) return gameCmp;
-                return a.name.localeCompare(b.name, 'ja');
+            if (state.colId === 'games') {
+                if (a.wins !== b.wins) return b.wins - a.wins;
+            } else if (['wins', 'losses', 'winRate'].includes(state.colId)) {
+                if (a.games !== b.games) return b.games - a.games;
             }
+            return a.score - b.score;
         } else if (target === 'joryu') {
             if (a.jAff !== b.jAff) return a.jAff - b.jAff;
             if (a.jNum !== b.jNum) return a.jNum - b.jNum;
@@ -318,8 +298,7 @@ function renderSummaryTable(target) {
 
     const tbody = document.querySelector(`${tableId} tbody`);
     if (viewData.length === 0) {
-        let colspan = (target === 'others') ? 5 : 6;
-        tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-message">データなし</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-message">データなし</td></tr>`;
     } else {
         let currentRank = 1;
         let prevVal = null;
@@ -343,12 +322,6 @@ function renderSummaryTable(target) {
                     <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
                     <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
                 </tr>`;
-            } else if (target === 'others') {
-                return `<tr>
-                    <td style="text-align:left;">${nameLink}</td>
-                    <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
-                    <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
-                </tr>`;
             } else {
                 return `<tr>
                     <td>${index + 1}</td><td style="text-align:left;">${nameLink}</td>
@@ -359,7 +332,7 @@ function renderSummaryTable(target) {
         }).join('');
     }
 
-    if (target === 'kishi' || target === 'others') {
+    if (target === 'kishi') {
         document.querySelectorAll(`${tableId} th.sortable`).forEach(th => {
             th.classList.remove('asc', 'desc');
             if (th.dataset.col === state.colId) th.classList.add(state.asc ? 'asc' : 'desc');

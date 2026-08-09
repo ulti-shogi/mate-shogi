@@ -50,11 +50,10 @@
 <!-- 💡 1. リスト表示画面（初期表示） -->
     <div id="list-view">
         <div class="tabs">
-            <button class="tab-btn active" data-target="panel-summary-kishi">勝敗一覧（棋士のみ）</button>
-            <button class="tab-btn" data-target="panel-summary-joryu">勝敗一覧（女流棋士）</button>
-            <button class="tab-btn" data-target="panel-summary-shoreikai">勝敗一覧（奨励会員）</button>
-            <button class="tab-btn" data-target="panel-summary-ama">勝敗一覧（アマ強豪）</button>
-            <button class="tab-btn" data-target="panel-summary-others">勝敗一覧（棋士以外）</button>
+            <button class="tab-btn active" data-target="panel-summary-kishi">棋士</button>
+            <button class="tab-btn" data-target="panel-summary-joryu">女流</button>
+            <button class="tab-btn" data-target="panel-summary-shoreikai">三段</button>
+            <button class="tab-btn" data-target="panel-summary-ama">アマ</button>
         </div>
 
         <div id="panel-summary-kishi" class="panel active">
@@ -111,22 +110,6 @@
             </table>
         </div>
 
-        <div id="panel-summary-others" class="panel">
-            <table id="summaryTableOthers">
-                <thead>
-                    <tr>
-                        <th>氏名</th>
-                        <th class="sortable" data-col="games" data-target="others">対局数<span class="sort-icon"></span></th>
-                        <th class="sortable" data-col="wins" data-target="others">勝数<span class="sort-icon"></span></th>
-                        <th class="sortable" data-col="losses" data-target="others">負数<span class="sort-icon"></span></th>
-                        <th class="sortable" data-col="winRate" data-target="others">勝率<span class="sort-icon"></span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="5" class="empty-message">データ読み込み中...</td></tr>
-                </tbody>
-            </table>
-        </div>
     </div>
 
     <!-- 💡 2. 個人履歴表示画面（初期は非表示） -->
