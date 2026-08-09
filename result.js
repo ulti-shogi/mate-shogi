@@ -16,6 +16,7 @@ const sortStateOthers = { colId: 'games', asc: false };
 const dataFiles = [
     'games_2026.txt',
     'games_2025.txt',
+    'games_2024.txt',
     // 💡 今後過去のデータを追加する場合は、以下のようにカンマ区切りで書き足すだけでOKです！
     // 'games_2024.txt',
     // 'games_2023.txt'
