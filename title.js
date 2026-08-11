@@ -6,6 +6,7 @@ function floorTo4Decimal(num) {
     return (str + "0000").substring(0, dotIndex + 5);
 }
 
+// データ全体を保持するグローバル変数
 var allSeriesData = [];
 var rankingData = [];
 
@@ -28,7 +29,23 @@ async function initRanking() {
         }
         
         var seriesDataMap = {};
+        var kishiStats = {}; // 棋士データを保持するオブジェクトをここに移動
         
+        function getOrCreateKishi(name) {
+            if (!kishiStats[name]) {
+                kishiStats[name] = { 
+                    name: name, 
+                    titleCount: 0, 
+                    appearCount: 0, 
+                    loseCount: 0, 
+                    titles: {},
+                    firstAppearDate: "9999-99-99" // 💡 初登場日の初期値（ありえない未来の日付）
+                };
+            }
+            return kishiStats[name];
+        }
+        
+        // テキストデータの読み込みとシリーズごとの集計
         for (var k = 1; k < validLines.length; k++) {
             var lineStr = validLines[k];
             if (lineStr.indexOf('[source:') === 0) continue;
@@ -46,6 +63,18 @@ async function initRanking() {
             var others = cells[colMap['others']] ? cells[colMap['others']].trim() : "";
             
             if (!match || !the || !playerA || !playerB) continue;
+            
+            // 💡 棋士の初登場日を記録（一番古い日付を保持し続ける）
+            if (gameDate && gameDate !== '―') {
+                if (playerA !== "該当者なし" && playerA !== "未定") {
+                    var pA = getOrCreateKishi(playerA);
+                    if (gameDate < pA.firstAppearDate) pA.firstAppearDate = gameDate;
+                }
+                if (playerB !== "該当者なし" && playerB !== "未定") {
+                    var pB = getOrCreateKishi(playerB);
+                    if (gameDate < pB.firstAppearDate) pB.firstAppearDate = gameDate;
+                }
+            }
             
             var seriesKey = the + "-" + match;
             
@@ -76,15 +105,15 @@ async function initRanking() {
                     winsB: 0, 
                     requiredWins: requiredWins, 
                     isNoMatch: isNoMatch,
-                    endDate: "",       // 💡 真の決着日
-                    isDecided: false,  // 💡 決着済みフラグ
-                    latestGameDate: "" // 進行中のための最新対局日
+                    endDate: "",       
+                    isDecided: false,  
+                    latestGameDate: "" 
                 };
             }
             
             var s = seriesDataMap[seriesKey];
             
-            // 💡【最重要ロジック】星を数え、規定数に達した日を「決着日」としてロックする
+            // 星を数え、規定数に達した日を「決着日」としてロックする
             if (!s.isDecided) {
                 if (resultA === '☆') s.winsA++;
                 else if (resultB === '☆') s.winsB++;
@@ -93,7 +122,7 @@ async function initRanking() {
                     s.endDate = gameDate;
                     s.isDecided = true;
                 } else if (s.isNoMatch) {
-                    s.endDate = gameDate; // 実施なしの場合は最初の行の日付
+                    s.endDate = gameDate; 
                     s.isDecided = true;
                 }
             }
@@ -104,14 +133,6 @@ async function initRanking() {
             } else if (gameDate && !s.latestGameDate) {
                 s.latestGameDate = gameDate;
             }
-        }
-        
-        var kishiStats = {};
-        function getOrCreateKishi(name) {
-            if (!kishiStats[name]) {
-                kishiStats[name] = { name: name, titleCount: 0, appearCount: 0, loseCount: 0, titles: {} };
-            }
-            return kishiStats[name];
         }
         
         var sKeys = Object.keys(seriesDataMap);
@@ -201,11 +222,19 @@ function sortData(data, field, direction) {
         var valB = b[field];
         
         if (valA === valB) {
+            // 第2の基準: 登場数or獲得数
             if (field === 'appearCount') {
                 if (a.titleCount !== b.titleCount) return b.titleCount - a.titleCount;
             } else {
                 if (a.appearCount !== b.appearCount) return b.appearCount - a.appearCount;
             }
+            
+            // 💡 第3の基準: タイトル戦初登場の日付が古い（早い）方を上にする
+            if (a.firstAppearDate !== b.firstAppearDate) {
+                return a.firstAppearDate < b.firstAppearDate ? -1 : 1;
+            }
+            
+            // 💡 究極の保険: 全く同じ日にデビューして成績も完全に同じ場合は五十音順
             return a.name.localeCompare(b.name, 'ja');
         }
         return direction === 'asc' ? valA - valB : valB - valA;
@@ -324,7 +353,6 @@ function renderYearlyTable(year) {
         if (allSeriesData[i].year === year) filtered.push(allSeriesData[i]);
     }
     
-    // 💡 決着日（endDate）で正確に並び替える処理
     filtered.sort(function(a, b) {
         var dateA = a.isDecided && a.endDate ? a.endDate : (a.latestGameDate || "9999-99-99");
         var dateB = b.isDecided && b.endDate ? b.endDate : (b.latestGameDate || "9999-99-99");
