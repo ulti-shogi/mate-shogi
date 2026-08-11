@@ -29,7 +29,7 @@ async function initRanking() {
         }
         
         var seriesDataMap = {};
-        var kishiStats = {}; // 棋士データを保持するオブジェクトをここに移動
+        var kishiStats = {}; 
         
         function getOrCreateKishi(name) {
             if (!kishiStats[name]) {
@@ -39,13 +39,12 @@ async function initRanking() {
                     appearCount: 0, 
                     loseCount: 0, 
                     titles: {},
-                    firstAppearDate: "9999-99-99" // 💡 初登場日の初期値（ありえない未来の日付）
+                    firstAppearDate: "9999-99-99" 
                 };
             }
             return kishiStats[name];
         }
         
-        // テキストデータの読み込みとシリーズごとの集計
         for (var k = 1; k < validLines.length; k++) {
             var lineStr = validLines[k];
             if (lineStr.indexOf('[source:') === 0) continue;
@@ -64,7 +63,6 @@ async function initRanking() {
             
             if (!match || !the || !playerA || !playerB) continue;
             
-            // 💡 棋士の初登場日を記録（一番古い日付を保持し続ける）
             if (gameDate && gameDate !== '―') {
                 if (playerA !== "該当者なし" && playerA !== "未定") {
                     var pA = getOrCreateKishi(playerA);
@@ -113,7 +111,6 @@ async function initRanking() {
             
             var s = seriesDataMap[seriesKey];
             
-            // 星を数え、規定数に達した日を「決着日」としてロックする
             if (!s.isDecided) {
                 if (resultA === '☆') s.winsA++;
                 else if (resultB === '☆') s.winsB++;
@@ -127,7 +124,6 @@ async function initRanking() {
                 }
             }
             
-            // まだ決着がついていないシリーズをテーブル下部に並べるための日付保持
             if (gameDate && resultA !== '―' && resultB !== '―') {
                 s.latestGameDate = gameDate;
             } else if (gameDate && !s.latestGameDate) {
@@ -196,6 +192,13 @@ function renderRankingTable(data) {
     var tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
     
+    // 💡 現在ソートされている列をHTMLから取得（デフォルトは獲得数: titleCount）
+    var activeTh = document.querySelector('#titleTable th.sortable.asc, #titleTable th.sortable.desc');
+    var currentSortField = activeTh ? activeTh.dataset.sort : 'titleCount';
+    
+    // 💡 赤太文字にするためのスタイル
+    var activeStyle = 'font-weight: bold; color: red;';
+    
     for (var i = 0; i < data.length; i++) {
         var k = data[i];
         var titlesArr = [];
@@ -204,13 +207,20 @@ function renderRankingTable(data) {
             titlesArr.push(tKeys[j].replace('戦', '') + '(' + k.titles[tKeys[j]] + ')');
         }
         
+        // 💡 現在ソートされている列のみにスタイルを適用する
+        var appearStyle = currentSortField === 'appearCount' ? activeStyle : '';
+        var titleStyle = currentSortField === 'titleCount' ? activeStyle : '';
+        var loseStyle = currentSortField === 'loseCount' ? activeStyle : '';
+        // 勝率は数字の幅を揃える設定を保持したまま適用
+        var winRateStyle = currentSortField === 'winRate' ? activeStyle + ' font-variant-numeric: tabular-nums;' : 'font-variant-numeric: tabular-nums;';
+        
         var tr = document.createElement('tr');
         tr.innerHTML = '<td>' + k.rank + '</td>' +
         '<td style="font-weight: bold; text-align: left; padding-left: 15px;">' + k.name + '</td>' +
-        '<td>' + k.appearCount + '</td>' +
-        '<td style="font-weight: bold; color: #1a3622;">' + k.titleCount + '</td>' +
-        '<td>' + k.loseCount + '</td>' +
-        '<td style="font-variant-numeric: tabular-nums;">' + floorTo4Decimal(k.winRate) + '</td>' +
+        '<td style="' + appearStyle + '">' + k.appearCount + '</td>' +
+        '<td style="' + titleStyle + '">' + k.titleCount + '</td>' +
+        '<td style="' + loseStyle + '">' + k.loseCount + '</td>' +
+        '<td style="' + winRateStyle + '">' + floorTo4Decimal(k.winRate) + '</td>' +
         '<td class="tablet-col pc-col" style="text-align: left; padding-left: 10px; color: #666; font-size: 12px;">' + (titlesArr.join(' ') || '-') + '</td>';
         tbody.appendChild(tr);
     }
@@ -222,19 +232,15 @@ function sortData(data, field, direction) {
         var valB = b[field];
         
         if (valA === valB) {
-            // 第2の基準: 登場数or獲得数
             if (field === 'appearCount') {
                 if (a.titleCount !== b.titleCount) return b.titleCount - a.titleCount;
             } else {
                 if (a.appearCount !== b.appearCount) return b.appearCount - a.appearCount;
             }
             
-            // 💡 第3の基準: タイトル戦初登場の日付が古い（早い）方を上にする
             if (a.firstAppearDate !== b.firstAppearDate) {
                 return a.firstAppearDate < b.firstAppearDate ? -1 : 1;
             }
-            
-            // 💡 究極の保険: 全く同じ日にデビューして成績も完全に同じ場合は五十音順
             return a.name.localeCompare(b.name, 'ja');
         }
         return direction === 'asc' ? valA - valB : valB - valA;
@@ -269,7 +275,7 @@ function setupRankingSort() {
             th.classList.add(direction);
             
             sortData(rankingData, field, direction);
-            renderRankingTable(rankingData);
+            renderRankingTable(rankingData); // ここで再描画されるので色が切り替わります
         });
     }
 }
