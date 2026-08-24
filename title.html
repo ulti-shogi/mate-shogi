@@ -6,35 +6,6 @@
     <title>歴代タイトル獲得ランキング - 将棋の殿堂</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:,">
-    <style>
-        /* 絞り込みエリアのスタイル */
-        .filter-area {
-            background-color: #f0ebd8;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .filter-area label {
-            font-weight: bold;
-            color: #1a3622;
-        }
-        .filter-area select {
-            padding: 5px;
-            font-size: 16px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            min-width: 150px;
-        }
-        /* 勝者セルの薄い赤色ハイライト */
-        .winner-bg {
-            background-color: #ffe6e6 !important;
-        }
-    </style>
 </head>
 <body>
 
@@ -79,8 +50,9 @@
         <table id="yearlyTable">
             <thead>
                 <tr>
-                    <th>棋戦</th>
+                    <!-- 💡 列の順番を入れ替えました -->
                     <th>期</th>
+                    <th>棋戦</th>
                     <th style="width: 25%;">保持者</th>
                     <th></th>
                     <th></th>

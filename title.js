@@ -192,11 +192,9 @@ function renderRankingTable(data) {
     var tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
     
-    // 💡 現在ソートされている列をHTMLから取得（デフォルトは獲得数: titleCount）
     var activeTh = document.querySelector('#titleTable th.sortable.asc, #titleTable th.sortable.desc');
     var currentSortField = activeTh ? activeTh.dataset.sort : 'titleCount';
     
-    // 💡 赤太文字にするためのスタイル
     var activeStyle = 'font-weight: bold; color: red;';
     
     for (var i = 0; i < data.length; i++) {
@@ -207,11 +205,9 @@ function renderRankingTable(data) {
             titlesArr.push(tKeys[j].replace('戦', '') + '(' + k.titles[tKeys[j]] + ')');
         }
         
-        // 💡 現在ソートされている列のみにスタイルを適用する
         var appearStyle = currentSortField === 'appearCount' ? activeStyle : '';
         var titleStyle = currentSortField === 'titleCount' ? activeStyle : '';
         var loseStyle = currentSortField === 'loseCount' ? activeStyle : '';
-        // 勝率は数字の幅を揃える設定を保持したまま適用
         var winRateStyle = currentSortField === 'winRate' ? activeStyle + ' font-variant-numeric: tabular-nums;' : 'font-variant-numeric: tabular-nums;';
         
         var tr = document.createElement('tr');
@@ -275,7 +271,7 @@ function setupRankingSort() {
             th.classList.add(direction);
             
             sortData(rankingData, field, direction);
-            renderRankingTable(rankingData); // ここで再描画されるので色が切り替わります
+            renderRankingTable(rankingData);
         });
     }
 }
@@ -380,9 +376,10 @@ function renderYearlyTable(year) {
             var bgB = s.winner === 'B' ? 'winner-bg' : '';
             
             var tr = document.createElement('tr');
+            // 💡 ここで s.the（期）と s.match（棋戦）の順番を入れ替えました
             tr.innerHTML = 
-                '<td>' + s.match + '</td>' +
                 '<td>' + s.the + '</td>' +
+                '<td>' + s.match + '</td>' +
                 '<td class="' + bgA + '">' + s.playerA + '</td>' +
                 '<td class="' + bgA + '">' + s.winsA + '</td>' +
                 '<td class="' + bgB + '">' + s.winsB + '</td>' +
