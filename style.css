@@ -471,3 +471,23 @@ footer {
 .winner-bg {
     background-color: #ffe6e6 !important;
 }
+
+/* =========================================
+   📱🖥️ 画面サイズに応じたテーブルの文字サイズ調整
+   ========================================= */
+
+/* タブレット（画面幅600px以上）のときの指示 */
+@media (min-width: 600px) {
+    th, td {
+        font-size: 14px;
+        padding: 9px 6px;
+    }
+}
+
+/* パソコン（画面幅900px以上）のときの指示 */
+@media (min-width: 900px) {
+    th, td {
+        font-size: 15px;
+        padding: 10px 8px;
+    }
+}
