@@ -388,7 +388,8 @@ window.showHistory = function(playerName) {
                 <td style="${resColor} font-size:16px;">${g.result}</td>
                 <td>${oppLink}</td>
                 <td>${g.mySengo}</td>
-                <td style="font-weight:bold; text-align:left;">${g.matchStr}</td>
+                <!-- 💡 text-align:left; を消して、class を追加 -->
+                <td class="match-detail-cell" style="font-weight:bold;">${g.matchStr}</td>
             </tr>`;
         }).join('');
 };

@@ -30,9 +30,19 @@
         }
 
         /* 👇 スマホ用のスタイル（画面幅が600px以下の時に適用） */
+        /* 💡 追加：パソコン時の基本スタイル */
+        .match-detail-cell {
+            text-align: left;
+        }
+
+        /* 👇 スマホ用のスタイル（画面幅が600px以下の時に適用） */
         @media screen and (max-width: 600px) {
             .hide-on-mobile {
                 display: none;
+            }
+            /* 💡 追加：スマホの時だけ中央揃えにする */
+            .match-detail-cell {
+                text-align: center;
             }
         }
     </style>
