@@ -112,19 +112,29 @@ function parseAllGames(gameTexts) {
             const notes = row[headers['notes']]?.trim() || "";
             const date = row[headers['game_date']]?.trim() || "";
             
-            let matchDetailStr = "";
+            // 💡 1. 常に表示するメイン部分（第○期 棋戦名）
+            let mainMatchStr = "";
             if (theStr) {
                 if(["JT杯", "NHK杯", "朝日杯", "達人戦"].includes(match)) {
-                    matchDetailStr += `第${theStr}回 `;
+                    mainMatchStr += `第${theStr}回 `;
                 } else {
-                    matchDetailStr += `第${theStr}期 `;
+                    mainMatchStr += `第${theStr}期 `;
                 }
             }
-            if (match) matchDetailStr += `${match} `;
-            if (phase) matchDetailStr += `${phase} `;
-            if (detail) matchDetailStr += `${detail} `;
-            if (notes && notes !== "なし") matchDetailStr += ` ${notes}`;
-            matchDetailStr = matchDetailStr.replace(/\s+/g, ' ').trim();
+            if (match) mainMatchStr += match;
+
+            // 💡 2. スマホでは隠すサブ部分（phase, detail, notes）
+            let subMatchStr = "";
+            if (phase) subMatchStr += `${phase} `;
+            if (detail) subMatchStr += `${detail} `;
+            if (notes && notes !== "なし") subMatchStr += `${notes}`;
+            subMatchStr = subMatchStr.trim();
+
+            // 💡 3. サブ部分がある場合のみ、スマホ非表示用のタグで囲んで合体
+            let matchDetailStr = mainMatchStr.trim();
+            if (subMatchStr !== "") {
+                matchDetailStr += ` <span class="hide-on-mobile">${subMatchStr}</span>`;
+            }
 
             allGameRecords.push({
                 date: date, match: match, matchDetail: matchDetailStr, 
