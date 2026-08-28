@@ -491,3 +491,47 @@ footer {
         padding: 10px 8px;
     }
 }
+
+/* =========================================
+   title.htmlの<style>を内のコードを移植
+   ========================================= */
+
+/* 検索エリアのスタイル追加 */
+        .search-area {
+            background-color: #f0ebd8;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .search-area label {
+            font-weight: bold;
+            color: #1a3622;
+        }
+        .search-area select {
+            padding: 5px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        /* 👇 スマホ用のスタイル（画面幅が600px以下の時に適用） */
+        /* 💡 追加：パソコン時の基本スタイル */
+        .match-detail-cell {
+            text-align: left;
+        }
+
+        /* 👇 スマホ用のスタイル（画面幅が600px以下の時に適用） */
+        @media screen and (max-width: 600px) {
+            .hide-on-mobile {
+                display: none;
+            }
+            /* 💡 追加：スマホの時だけ中央揃えにする */
+            .match-detail-cell {
+                text-align: center;
+            }
+        }
