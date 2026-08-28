@@ -402,5 +402,5 @@ footer {
     #menjoTable th:nth-child(5), #menjoTable td:nth-child(5) { display: none; }
     
     /* 年度別勝敗一覧（棋士）：序列列（1列目）を非表示 */
-    #summaryTableKishi th:nth-child(1), #summaryTableKishi td:nth-child(1) { display: none; }
+    /* #summaryTableKishi th:nth-child(1), #summaryTableKishi td:nth-child(1) { display: none; } */
 }
