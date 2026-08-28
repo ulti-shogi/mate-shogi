@@ -23,13 +23,36 @@ h1 {
     padding-bottom: 10px;
 }
 
-.controls {
+/* =========================================
+   🔍 検索・絞り込みエリア共通デザイン
+   ========================================= */
+/* 💡 .search-area と .filter-area の重複を解消して統一 */
+.controls, .search-area, .filter-area {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; /* 中央揃えに統一 */
     align-items: center;
     margin-bottom: 20px;
-    gap: 15px;
+    gap: 20px;
     flex-wrap: wrap;
+}
+
+.search-area, .filter-area {
+    background-color: #f0ebd8;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.search-area label, .filter-area label {
+    font-weight: bold;
+    color: #1a3622;
+}
+
+.search-area select, .filter-area select {
+    padding: 5px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    min-width: 150px;
 }
 
 #searchInput {
@@ -41,6 +64,9 @@ h1 {
     max-width: 400px;
 }
 
+/* =========================================
+   📊 テーブル基本デザイン
+   ========================================= */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -70,6 +96,28 @@ th.sortable:hover {
     background-color: #e3decc;
 }
 
+tr:hover {
+    background-color: #faf9f5;
+}
+
+.empty-message {
+    text-align: center;
+    color: #999;
+}
+
+/* 💡 パソコン時の棋戦詳細セルの基本スタイル（左揃え） */
+.match-detail-cell {
+    text-align: left;
+}
+
+/* 勝者セルの薄い赤色ハイライト */
+.winner-bg {
+    background-color: #ffe6e6 !important;
+}
+
+/* =========================================
+   🔀 ソート用アイコン・セレクトボックス
+   ========================================= */
 .dynamic-select {
     display: block;
     margin: 0 auto;
@@ -99,30 +147,62 @@ th.sortable:hover {
 }
 
 .sort-icon::after { content: '↕'; color: #ccc; }
-
 th.asc .sort-icon { background-color: #cba135; border-color: #cba135; }
 th.asc .sort-icon::after { content: '▲'; color: #fff; }
-
 th.desc .sort-icon { background-color: #cba135; border-color: #cba135; }
 th.desc .sort-icon::after { content: '▼'; color: #fff; }
 
-tr:hover {
-    background-color: #faf9f5;
+/* =========================================
+   📁 タブ切り替えボタン
+   ========================================= */
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
-.empty-message {
-    text-align: center;
-    color: #999;
+.tab-btn {
+    background-color: #f0ebd8;
+    color: #1a3622;
+    border: 2px solid #e3decc;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.tablet-col, .pc-col { display: none; }
-@media (min-width: 600px) { .tablet-col { display: table-cell; } }
-@media (min-width: 900px) { .pc-col { display: table-cell; } }
+.tab-btn:hover {
+    background-color: #e3decc;
+}
+
+.tab-btn.active {
+    background-color: #cba135;
+    color: #fff;
+    border-color: #cba135;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* =========================================
-   📊 平均年齢ページ (average.html) 専用のデザイン
+   📊 平均年齢ページ (average.html) 専用
    ========================================= */
-
 .average-card {
     background: #fff;
     border: 2px solid #cba135;
@@ -160,59 +240,31 @@ tr:hover {
     justify-content: center;
 }
 
-/* ⬇⬇ 【追加】スマートフォン用（横幅600px未満）の調整 ⬇⬇ */
-@media (max-width: 599.98px) {
-    /* 1. 平均年齢の表示を一列に収めるためにフォントサイズを縮小 */
-    .average-value {
-        font-size: 28px; /* 42px👉28pxに */
-        letter-spacing: 1px;
-    }
-
-    /* 2. テーブルの「四段昇段日」の列（4列目）を非表示にする */
-    /* 見出しの4列目を非表示 */
-    #averageTable th:nth-child(4) {
-        display: none;
-    }
-    /* データ行の4列目を非表示 */
-    #averageTable td:nth-child(4) {
-        display: none;
-    }
-}
-/* ⬆⬆ ここまで ⬆⬆ */
-
 /* =========================================
-   🏠 トップページ (index.html) 専用のデザイン
+   🏠 トップページ (index.html) 専用
    ========================================= */
-
 .header-section {
     text-align: center;
     padding: 30px 10px 10px;
 }
-
 .header-section h1 {
     font-size: 32px;
     border-bottom: none;
     margin-bottom: 5px;
 }
-
 .subtitle {
     color: #555;
     font-size: 14px;
     margin-top: 0;
     margin-bottom: 30px;
 }
-
-.main-menu {
-    padding: 30px;
-}
-
+.main-menu { padding: 30px; }
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
     margin-bottom: 40px;
 }
-
 .menu-card {
     background: #fff;
     border: 2px solid #e3decc;
@@ -225,12 +277,7 @@ tr:hover {
     display: flex;
     flex-direction: column;
 }
-
-.card-icon {
-    font-size: 30px;
-    margin-bottom: 10px;
-}
-
+.card-icon { font-size: 30px; margin-bottom: 10px; }
 .menu-card h2 {
     color: #1a3622;
     font-size: 18px;
@@ -238,7 +285,6 @@ tr:hover {
     border-bottom: 1px solid #e3decc;
     padding-bottom: 8px;
 }
-
 .menu-card p {
     font-size: 13px;
     color: #666;
@@ -246,27 +292,20 @@ tr:hover {
     margin: 0 0 15px 0;
     flex-grow: 1;
 }
-
 .active-card {
     border-color: #cba135;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
-
 .active-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 15px rgba(203, 161, 53, 0.2);
 }
-
 .disabled-card {
     background-color: #faf9f5;
     opacity: 0.7;
     cursor: not-allowed;
 }
-
-.disabled-card h2, .disabled-card p {
-    color: #999;
-}
-
+.disabled-card h2, .disabled-card p { color: #999; }
 .status-badge {
     position: absolute;
     top: 15px;
@@ -278,49 +317,31 @@ tr:hover {
     padding: 4px 8px;
     border-radius: 4px;
 }
-
-.status-badge.waiting {
-    background-color: #ccc;
-}
-
+.status-badge.waiting { background-color: #ccc; }
 .whats-new {
     background: #faf9f5;
     border-left: 5px solid #1a3622;
     padding: 15px 20px;
     border-radius: 0 8px 8px 0;
 }
-
 .whats-new h3 {
     margin-top: 0;
     color: #1a3622;
     font-size: 16px;
 }
-
-.whats-new ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
+.whats-new ul { list-style: none; padding: 0; margin: 0; }
 .whats-new li {
     font-size: 13px;
     margin-bottom: 8px;
     border-bottom: 1px dashed #ddd;
     padding-bottom: 8px;
 }
-
-.whats-new li:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-
+.whats-new li:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 .date {
     font-weight: bold;
     color: #cba135;
     margin-right: 10px;
 }
-
 footer {
     text-align: center;
     padding: 20px;
@@ -329,209 +350,57 @@ footer {
 }
 
 /* =========================================
-   💰 賞金ページ (prize.html) 専用のデザイン
+   📱🖥️ 画面サイズに応じたレスポンシブ設定
    ========================================= */
 
-.tabs {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+.tablet-col, .pc-col { display: none; }
+@media (min-width: 600px) { .tablet-col { display: table-cell; } }
+@media (min-width: 900px) { .pc-col { display: table-cell; } }
+
+/* タブレット（画面幅600px以上）のときの文字サイズ */
+@media (min-width: 600px) {
+    th, td { font-size: 14px; padding: 9px 6px; }
 }
 
-.tab-btn {
-    background-color: #f0ebd8;
-    color: #1a3622;
-    border: 2px solid #e3decc;
-    border-radius: 6px;
-    padding: 10px 14px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease;
+/* パソコン（画面幅900px以上）のときの文字サイズ */
+@media (min-width: 900px) {
+    th, td { font-size: 18px; padding: 10px 8px; }
 }
 
-.tab-btn:hover {
-    background-color: #e3decc;
-}
-
-/* 選択されているタブ */
-.tab-btn.active {
-    background-color: #cba135;
-    color: #fff;
-    border-color: #cba135;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.panel {
-    display: none;
-    animation: fadeIn 0.3s ease;
-}
-
-.panel.active {
-    display: block;
-}
-
-/* 画面が切り替わる時のフワッとするアニメーション */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* スマホ表示の時にタブを押しやすくする調整 */
+/* ⬇⬇ 【重要】スマートフォン用（横幅600px未満）の調整をここに集約 ⬇⬇ */
 @media (max-width: 599.98px) {
+    
+    /* --- 共通・レイアウト調整 --- */
+    /* タブボタンを2列×2行の配置にする */
     .tab-btn {
-        flex: 1 1 45%; /* スマホでは2列×2行のボタン配置にする */
+        flex: 1 1 45%; 
         text-align: center;
         padding: 8px;
         font-size: 12px;
     }
-}
-
-/* ⬇⬇ 【追加】歴代1億円以上テーブルのみ、スマホで年齢列を非表示 ⬇⬇ */
-@media (max-width: 599.98px) {
-    #hundredTable th:nth-child(6),
-    #hundredTable td:nth-child(6) {
-        display: none;
-    }
-}
-
-/* ⬇⬇ 【追加】免状授与一覧：スマホで備考列（5列目）を非表示 ⬇⬇ */
-@media (max-width: 599.98px) {
-    #menjoTable th:nth-child(5),
-    #menjoTable td:nth-child(5) {
-        display: none;
-    }
-}
-
-/* ⬇⬇ 【追加】2025年度勝敗一覧：スマホで「序列」列（1列目）を非表示 ⬇⬇ */
-@media (max-width: 599.98px) {
-    #summaryTable th:nth-child(1),
-    #summaryTable td:nth-child(1) {
-        display: none;
-    }
-}
-
-/* ⬇⬇ 【修正版】テーブルだけを白地いっぱいに広げる（スマホ用） ⬇⬇ */
-@media (max-width: 599.98px) {
-    /* 1. 勝敗一覧（パネル）を左右に20pxずつ引っ張り出して余白を打ち消す */
-    .panel {
-        margin-left: -20px;
-        margin-right: -20px;
-    }
     
-    /* 2. 対局履歴テーブルを左右に20px引っ張り出す */
-    #historyTable {
-        width: calc(100% + 40px);
-        margin-left: -20px;
-        margin-right: -20px;
-    }
+    /* パネルとテーブルを左右の画面端まで広げる */
+    .panel { margin-left: -20px; margin-right: -20px; }
+    #historyTable { width: calc(100% + 40px); margin-left: -20px; margin-right: -20px; }
+    th:first-child, td:first-child { border-left: none; padding-left: 10px; }
+    th:last-child, td:last-child { border-right: none; padding-right: 10px; }
+    
+    /* 💡 今回追加した：特定の文字を隠す＆中央揃えにする処理 */
+    .hide-on-mobile { display: none; }
+    .match-detail-cell { text-align: center; }
 
-    /* 3. テーブルが画面端にピタッとつくので、一番外側の縦線を消してスッキリさせる */
-    th:first-child, td:first-child { 
-        border-left: none; 
-        padding-left: 10px; 
-    }
-    th:last-child, td:last-child { 
-        border-right: none; 
-        padding-right: 10px; 
-    }
+    /* --- 各ページの個別テーブル調整（不要な列を隠す） --- */
+    /* 平均年齢ページ：四段昇段日（4列目）を非表示 */
+    #averageTable th:nth-child(4), #averageTable td:nth-child(4) { display: none; }
+    /* 平均年齢ページ：大きな数字を少し小さく */
+    .average-value { font-size: 28px; letter-spacing: 1px; }
+
+    /* 歴代1億円以上テーブル：年齢列（6列目）を非表示 */
+    #hundredTable th:nth-child(6), #hundredTable td:nth-child(6) { display: none; }
+    
+    /* 免状授与一覧：備考列（5列目）を非表示 */
+    #menjoTable th:nth-child(5), #menjoTable td:nth-child(5) { display: none; }
+    
+    /* 年度別勝敗一覧（棋士）：序列列（1列目）を非表示 */
+    #summaryTableKishi th:nth-child(1), #summaryTableKishi td:nth-child(1) { display: none; }
 }
-
-/* =========================================
-   🏆 歴代タイトル獲得ランキング専用のデザイン
-   ========================================= */
-
-/* 絞り込みエリアのスタイル */
-.filter-area {
-    background-color: #f0ebd8;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 6px;
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.filter-area label {
-    font-weight: bold;
-    color: #1a3622;
-}
-.filter-area select {
-    padding: 5px;
-    font-size: 16px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    min-width: 150px;
-}
-
-/* 勝者セルの薄い赤色ハイライト */
-.winner-bg {
-    background-color: #ffe6e6 !important;
-}
-
-/* =========================================
-   📱🖥️ 画面サイズに応じたテーブルの文字サイズ調整
-   ========================================= */
-
-/* タブレット（画面幅600px以上）のときの指示 */
-@media (min-width: 600px) {
-    th, td {
-        font-size: 14px;
-        padding: 9px 6px;
-    }
-}
-
-/* パソコン（画面幅900px以上）のときの指示 */
-@media (min-width: 900px) {
-    th, td {
-        font-size: 18px;
-        padding: 10px 8px;
-    }
-}
-
-/* =========================================
-   title.htmlの<style>を内のコードを移植
-   ========================================= */
-
-/* 検索エリアのスタイル追加 */
-        .search-area {
-            background-color: #f0ebd8;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .search-area label {
-            font-weight: bold;
-            color: #1a3622;
-        }
-        .search-area select {
-            padding: 5px;
-            font-size: 16px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-
-        /* 👇 スマホ用のスタイル（画面幅が600px以下の時に適用） */
-        /* 💡 追加：パソコン時の基本スタイル */
-        .match-detail-cell {
-            text-align: left;
-        }
-
-        /* 👇 スマホ用のスタイル（画面幅が600px以下の時に適用） */
-        @media screen and (max-width: 600px) {
-            .hide-on-mobile {
-                display: none;
-            }
-            /* 💡 追加：スマホの時だけ中央揃えにする */
-            .match-detail-cell {
-                text-align: center;
-            }
-        }
