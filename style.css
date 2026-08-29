@@ -392,13 +392,11 @@ footer {
     /* 3. テーブルが画面端にピタッとつくので、一番外側の縦線を消してスッキリさせる */
     th:first-child, td:first-child { 
         border-left: none; 
-        padding-left: 10px; 
-        padding-right: 10px; /* 👈 追加：右余白も10pxにして左右均等にする */
+        /* padding-left: 10px; を削除 */
     }
     th:last-child, td:last-child { 
         border-right: none; 
-        padding-left: 10px;  /* 👈 追加：左余白も10pxにして左右均等にする */
-        padding-right: 10px; 
+        /* padding-right: 10px; を削除 */
     }
     
     /* 💡 今回追加した：特定の文字を隠す＆中央揃えにする処理 */
