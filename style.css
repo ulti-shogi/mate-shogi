@@ -381,7 +381,13 @@ footer {
     
     /* パネルとテーブルを左右の画面端まで広げる */
     .panel { margin-left: -20px; margin-right: -20px; }
-    #historyTable { width: calc(100% + 40px); margin-left: -20px; margin-right: -20px; }
+    /* 2. 対局履歴・免状テーブルを左右に20px引っ張り出す */
+    #historyTable,
+    #menjoTable {
+        width: calc(100% + 40px);
+        margin-left: -20px;
+        margin-right: -20px;
+    }
     th:first-child, td:first-child { border-left: none; padding-left: 10px; }
     th:last-child, td:last-child { border-right: none; padding-right: 10px; }
     
