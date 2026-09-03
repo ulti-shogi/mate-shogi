@@ -340,6 +340,7 @@ function renderSummaryTable(target) {
                 </tr>`;
             }
         }).join('');
+    } // 💡 閉じカッコをここに追加しました！
 
     if (target === 'kishi') {
         document.querySelectorAll(`${tableId} th.sortable`).forEach(th => {
