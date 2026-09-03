@@ -327,14 +327,16 @@ function renderSummaryTable(target) {
                 if (index > 0 && currVal !== prevVal) currentRank = index + 1; 
                 prevVal = currVal; 
 
+                if (target === 'kishi') {
+                // ...中略...
                 return `<tr>
-                    <td>${currentRank}</td><td style="text-align:left;">${nameLink}</td>
+                    <td>${currentRank}</td><td>${nameLink}</td>
                     <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
                     <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
                 </tr>`;
             } else {
                 return `<tr>
-                    <td>${index + 1}</td><td style="text-align:left;">${nameLink}</td>
+                    <td>${index + 1}</td><td>${nameLink}</td>
                     <td>${d.games}</td><td>${d.wins}</td><td>${d.losses}</td>
                     <td style="font-weight:bold; color:#1a3622;">${d.winRateStr}</td>
                 </tr>`;
